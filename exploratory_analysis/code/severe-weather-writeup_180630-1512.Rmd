@@ -1,3 +1,9 @@
 ---
 title: "Health and Financial Impact of Severe-Weather Events Between 2005 and 2011"
 ---
+
+## Synopsis
+
+## Data Processing
+
+## Results
