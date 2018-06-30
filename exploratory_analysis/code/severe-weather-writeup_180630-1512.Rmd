@@ -6,4 +6,14 @@ title: "Health and Financial Impact of Severe-Weather Events Between 2005 and 20
 
 ## Data Processing
 
+
 ## Results
+
+```{r , eval=F, include=F, results="hide"}
+library(rmarkdown)
+rmarkdown::render(
+    "code/severe-weather-writeup_180630-1512.Rmd",
+    output_dir = "text",
+    clean = T
+)
+```
