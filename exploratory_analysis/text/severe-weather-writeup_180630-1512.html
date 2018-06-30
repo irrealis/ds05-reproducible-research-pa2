@@ -155,6 +155,21 @@ raw_pth &lt;- file.path(raw_dir, raw_fnm)
 # Cached data.
 cch_fnm &lt;- &quot;StormData.csv&quot;
 cch_pth &lt;- file.path(int_dir, cch_fnm)</code></pre>
+<p>We create any missing analysis subdirectories.</p>
+<pre class="r"><code>if(!dir.exists(dat_dir)){ dir.create(dat_dir) }
+if(!dir.exists(raw_dir)){ dir.create(raw_dir) }
+if(!dir.exists(int_dir)){ dir.create(int_dir) }
+if(!dir.exists(cln_dir)){ dir.create(cln_dir) }</code></pre>
+<p>We define a convenience function to load raw data, downloading and caching if missing.</p>
+<pre class="r"><code>fetch_if_missing_then_load &lt;- function(url_, raw_pth_, dat_pth_){
+    if(!file.exists(dat_pth_)){
+        if(!file.exists(raw_pth_)){ download.file(url_, raw_pth_) }
+        fwrite(read.csv(raw_pth_), dat_pth_)
+    }
+    fread(dat_pth_)
+}</code></pre>
+<p>We then load raw data.</p>
+<pre class="r"><code>dat &lt;- fetch_if_missing_then_load(raw_url, raw_pth, cch_pth)</code></pre>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>

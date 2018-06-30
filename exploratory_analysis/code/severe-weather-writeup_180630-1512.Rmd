@@ -39,6 +39,33 @@ cch_fnm <- "StormData.csv"
 cch_pth <- file.path(int_dir, cch_fnm)
 ```
 
+We create any missing analysis subdirectories.
+
+```{r }
+if(!dir.exists(dat_dir)){ dir.create(dat_dir) }
+if(!dir.exists(raw_dir)){ dir.create(raw_dir) }
+if(!dir.exists(int_dir)){ dir.create(int_dir) }
+if(!dir.exists(cln_dir)){ dir.create(cln_dir) }
+```
+
+We define a convenience function to load raw data, downloading and caching if missing.
+
+```{r }
+fetch_if_missing_then_load <- function(url_, raw_pth_, dat_pth_){
+    if(!file.exists(dat_pth_)){
+        if(!file.exists(raw_pth_)){ download.file(url_, raw_pth_) }
+        fwrite(read.csv(raw_pth_), dat_pth_)
+    }
+    fread(dat_pth_)
+}
+```
+
+We then load raw data.
+
+```{r }
+dat <- fetch_if_missing_then_load(raw_url, raw_pth, cch_pth)
+```
+
 
 ## Results
 
@@ -46,7 +73,7 @@ cch_pth <- file.path(int_dir, cch_fnm)
 library(rmarkdown)
 rmarkdown::render(
     "code/severe-weather-writeup_180630-1512.Rmd",
-    output_dir = "text",
+    intermediates_dir = ".",
     clean = T
 )
 ```
