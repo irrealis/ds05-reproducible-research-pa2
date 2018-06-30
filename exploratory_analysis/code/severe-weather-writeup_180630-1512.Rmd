@@ -6,6 +6,15 @@ title: "Health and Financial Impact of Severe-Weather Events Between 2005 and 20
 
 ## Data Processing
 
+R libraries _data.table_ and _dplyr_ are used for data manipulation, _lubridate_ for handling dates, and _ggplot2_ for plotting.
+
+```{r }
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+```
+
 
 ## Results
 
