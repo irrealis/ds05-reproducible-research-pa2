@@ -72,8 +72,8 @@ dat <- fetch_if_missing_then_load(raw_url, raw_pth, cch_pth)
 ```{r , eval=F, include=F, results="hide"}
 library(rmarkdown)
 rmarkdown::render(
-    "code/severe-weather-writeup_180630-1512.Rmd",
-    intermediates_dir = ".",
+    "severe-weather-writeup_180630-1512.Rmd",
+    output_dir = "text",
     clean = T
 )
 ```
