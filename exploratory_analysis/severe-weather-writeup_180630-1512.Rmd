@@ -66,6 +66,19 @@ We then load raw data.
 dat <- fetch_if_missing_then_load(raw_url, raw_pth, cch_pth)
 ```
 
+This analysis uses the following columns:
+
+- `EVTYPE` (weather-event types)
+- `FATALITIES` and `INJURIES`
+- `PROPDMG` and `PROPDMGEXP` (property-damage values)
+- `CROPDMG` and `CROPDMGEXP` (crop-damage values)
+- `BGN_DATE`, `BGN_TIME`, and `TIME_ZONE` (weather-event starting dates and times)
+
+The remainder are discarded.
+
+```{r }
+dat[, c("STATE__", "COUNTY", "COUNTYNAME", "STATE", "BGN_RANGE", "BGN_AZI", "BGN_LOCATI", "END_DATE", "END_TIME", "COUNTY_END", "COUNTYENDN", "END_RANGE", "END_AZI", "END_LOCATI", "LENGTH", "WIDTH", "F", "MAG", "WFO", "STATEOFFIC", "ZONENAMES", "LATITUDE", "LONGITUDE", "LATITUDE_E", "LONGITUDE_", "REMARKS", "REFNUM") := NULL]
+```
 
 ## Results
 

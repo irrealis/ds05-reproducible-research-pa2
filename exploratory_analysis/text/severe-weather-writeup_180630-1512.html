@@ -170,6 +170,16 @@ if(!dir.exists(cln_dir)){ dir.create(cln_dir) }</code></pre>
 }</code></pre>
 <p>We then load raw data.</p>
 <pre class="r"><code>dat &lt;- fetch_if_missing_then_load(raw_url, raw_pth, cch_pth)</code></pre>
+<p>This analysis uses the following columns:</p>
+<ul>
+<li><code>EVTYPE</code> (weather-event types)</li>
+<li><code>FATALITIES</code> and <code>INJURIES</code></li>
+<li><code>PROPDMG</code> and <code>PROPDMGEXP</code> (property-damage values)</li>
+<li><code>CROPDMG</code> and <code>CROPDMGEXP</code> (crop-damage values)</li>
+<li><code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code> (weather-event starting dates and times)</li>
+</ul>
+<p>The remainder are discarded.</p>
+<pre class="r"><code>dat[, c(&quot;STATE__&quot;, &quot;COUNTY&quot;, &quot;COUNTYNAME&quot;, &quot;STATE&quot;, &quot;BGN_RANGE&quot;, &quot;BGN_AZI&quot;, &quot;BGN_LOCATI&quot;, &quot;END_DATE&quot;, &quot;END_TIME&quot;, &quot;COUNTY_END&quot;, &quot;COUNTYENDN&quot;, &quot;END_RANGE&quot;, &quot;END_AZI&quot;, &quot;END_LOCATI&quot;, &quot;LENGTH&quot;, &quot;WIDTH&quot;, &quot;F&quot;, &quot;MAG&quot;, &quot;WFO&quot;, &quot;STATEOFFIC&quot;, &quot;ZONENAMES&quot;, &quot;LATITUDE&quot;, &quot;LONGITUDE&quot;, &quot;LATITUDE_E&quot;, &quot;LONGITUDE_&quot;, &quot;REMARKS&quot;, &quot;REFNUM&quot;) := NULL]</code></pre>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
