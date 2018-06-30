@@ -135,6 +135,26 @@ $(document).ready(function () {
 library(ggplot2)
 library(dplyr)
 library(lubridate)</code></pre>
+<p>We begin by setting hard-coded parameters for this analysis, most importantly the URL for raw data. The remaining convenience parameters organize analysis files.</p>
+<pre class="r"><code># Data subdirectory.
+dat_dir &lt;- &quot;data&quot;
+# Raw data subdirectory.
+raw_dir &lt;- file.path(dat_dir, &quot;raw&quot;)
+# Intermediate data subdirectory.
+int_dir &lt;- file.path(dat_dir, &quot;intermediate&quot;)
+# Clean data subdirectory.
+cln_dir &lt;- file.path(dat_dir, &quot;processed&quot;)
+
+# Raw-data URL.
+raw_url &lt;- &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2&quot;
+# Raw-data filename.
+raw_fnm &lt;- &quot;StormData.csv.bz2&quot;
+# Raw-data path.
+raw_pth &lt;- file.path(raw_dir, raw_fnm)
+
+# Cached data.
+cch_fnm &lt;- &quot;StormData.csv&quot;
+cch_pth &lt;- file.path(int_dir, cch_fnm)</code></pre>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>

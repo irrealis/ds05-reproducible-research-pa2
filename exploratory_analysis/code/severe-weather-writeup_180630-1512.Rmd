@@ -15,6 +15,30 @@ library(dplyr)
 library(lubridate)
 ```
 
+We begin by setting hard-coded parameters for this analysis, most importantly the URL for raw data. The remaining convenience parameters organize analysis files.
+
+```{r }
+# Data subdirectory.
+dat_dir <- "data"
+# Raw data subdirectory.
+raw_dir <- file.path(dat_dir, "raw")
+# Intermediate data subdirectory.
+int_dir <- file.path(dat_dir, "intermediate")
+# Clean data subdirectory.
+cln_dir <- file.path(dat_dir, "processed")
+
+# Raw-data URL.
+raw_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+# Raw-data filename.
+raw_fnm <- "StormData.csv.bz2"
+# Raw-data path.
+raw_pth <- file.path(raw_dir, raw_fnm)
+
+# Cached data.
+cch_fnm <- "StormData.csv"
+cch_pth <- file.path(int_dir, cch_fnm)
+```
+
 
 ## Results
 
