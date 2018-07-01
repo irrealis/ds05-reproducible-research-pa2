@@ -78,16 +78,19 @@ This analysis uses the following columns:
 - `CROPDMG` and `CROPDMGEXP` (crop-damage values)
 - `BGN_DATE`, `BGN_TIME`, and `TIME_ZONE` (weather-event starting dates and times)
 
-We discard all others, and verify the desired columns are present.
+We discard all others.
 
 ```{r }
-dat[, c("STATE__", "COUNTY", "COUNTYNAME", "STATE", "BGN_RANGE", "BGN_AZI", "BGN_LOCATI", "END_DATE", "END_TIME", "COUNTY_END", "COUNTYENDN", "END_RANGE", "END_AZI", "END_LOCATI", "LENGTH", "WIDTH", "F", "MAG", "WFO", "STATEOFFIC", "ZONENAMES", "LATITUDE", "LONGITUDE", "LATITUDE_E", "LONGITUDE_", "REMARKS", "REFNUM") := NULL]
-
-str(dat)
+dat <- dat %>%
+    select(
+        EVTYPE, BGN_DATE, BGN_TIME, TIME_ZONE,
+        PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, FATALITIES, INJURIES
+    ) %>%
+    data.table()
 ```
 
 
-### Initial assessment of dataset quality
+### Initial assessment of dataset quality: event types
 
 From section 2.1 of the [National Weather Service (NWS) storm data documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 permitted storm data event types, but find `r length(unique(dat$EVTYPE))` distinct types in our data.
 
@@ -114,7 +117,7 @@ Only three event types are recorded for the 1950s (and only `r unique(dat[grepl(
 unique(dat[grepl("195[[:digit:]]", BGN_DATE, ignore.case = F), EVTYPE])
 ```
 
-The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the `r length(unique(dat$EVTYPE))` distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis.
+The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. But it also states that 48 event types are used for 1996 to present, which disagrees with our `r length(unique(dat$EVTYPE))` distinct types. On the other hand, this suggests that constructing a time series may help to identify and extract a dataset suitable for analysis.
 
 
 ### Time series construction
@@ -233,7 +236,7 @@ long_updates <- updates %>% melt(id.var = c('year'), value.name = 'count')
 ggplot(long_updates, aes(x=year, y=count, color=variable)) + geom_line()
 ```
 
-Over 400 new event are added between about 1993 and 1995, the majority of which are retired within about one year. The number of actively-used events continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, exactly `r counts_by_year[2007 == year, n]` are used each year.
+Over 400 new event are added between about 1993 and 1995, the majority of which are retired within a few years. The number of actively-used events continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, exactly `r counts_by_year[2007 == year, n]` are used in each year.
 
 ```{r }
 counts_by_year[2005 <= year,]
@@ -248,8 +251,7 @@ sort(event_types)
 length(event_types)
 ```
 
-These are the permitted storm data events listed in table 1, section 2.1.1 of the
-[National Weather Service Instruction 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint).
+These types are exactly the permitted storm data events listed in table 1, section 2.1.1 of the [National Weather Service Instruction (NWSI) 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint).
 
 
 # Results
