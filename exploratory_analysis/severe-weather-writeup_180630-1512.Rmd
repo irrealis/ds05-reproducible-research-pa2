@@ -161,7 +161,23 @@ bad_begin_times <- dat[is.na(begin_times), BGN_TIME]
 dat <- dat[!is.na(begin_times)]
 ```
 
-This has removed `r length(bad_begin_times)` rows with begin times `r bad_begin_times`.
+This has removed `r length(bad_begin_times)` rows with begin times `r bad_begin_times`. We now synthesize `begin_datetime` values.
+
+```{r }
+convert_to_datetime <- function(date_, time_, tz_){
+    psx_date_ <- parse_date_time(date_, "mdY HMS")
+    psx_time_ <- parse_date_time(time_, c("HM", "HMS"))
+    make_datetime(
+        year = year(psx_date_),
+        month = month(psx_date_),
+        day = day(psx_date_),
+        hour = hour(psx_time_),
+        min = minute(psx_time_),
+        tz = as.character(tz_)
+    )
+}
+dat[, begin_datetime := convert_to_datetime(BGN_DATE, BGN_TIME, timezone)]
+```
 
 
 ## Results

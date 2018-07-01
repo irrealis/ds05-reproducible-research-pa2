@@ -257,7 +257,20 @@ dat &lt;- dat[timezone != &quot;NA&quot;,]</code></pre>
 <pre><code>## Warning: 5 failed to parse.</code></pre>
 <pre class="r"><code>bad_begin_times &lt;- dat[is.na(begin_times), BGN_TIME]
 dat &lt;- dat[!is.na(begin_times)]</code></pre>
-<p>This has removed 5 rows with begin times 1990, 9999, 2090, 1580, 0572.</p>
+<p>This has removed 5 rows with begin times 1990, 9999, 2090, 1580, 0572. We now synthesize <code>begin_datetime</code> values.</p>
+<pre class="r"><code>convert_to_datetime &lt;- function(date_, time_, tz_){
+    psx_date_ &lt;- parse_date_time(date_, &quot;mdY HMS&quot;)
+    psx_time_ &lt;- parse_date_time(time_, c(&quot;HM&quot;, &quot;HMS&quot;))
+    make_datetime(
+        year = year(psx_date_),
+        month = month(psx_date_),
+        day = day(psx_date_),
+        hour = hour(psx_time_),
+        min = minute(psx_time_),
+        tz = as.character(tz_)
+    )
+}
+dat[, begin_datetime := convert_to_datetime(BGN_DATE, BGN_TIME, timezone)]</code></pre>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
