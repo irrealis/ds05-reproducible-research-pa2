@@ -185,6 +185,54 @@ convert_to_datetime <- function(date_, time_, tz_){
 dat[, begin_datetime := convert_to_datetime(BGN_DATE, BGN_TIME, timezone)]
 ```
 
+This permits vizualizing the dataset's evolution, and that of `EVTYPE` values in particular.
+
+
+### Visualization of `EVTYPE` evolution
+
+We first extract the number of different event types used each year.
+
+```{r }
+counts_by_year <- dat %>%
+    transmute(year = year(with_tz(begin_datetime, 'Etc/GMT+0')), EVTYPE) %>%
+    unique() %>%
+    count(year) %>%
+    data.table()
+```
+
+We add to this the number of new event types added or removed each year.
+
+```{r }
+uses <- do.call(data.table, with(dat,
+    aggregate(
+        cbind(years = year(begin_datetime)),
+        by = list(event_type = EVTYPE),
+        function(yr) c(first = min(yr), last = max(yr))
+    )
+)) %>%
+    mutate(years_used = years.last - years.first + 1)
+additions <- uses %>%
+    count(year = years.first) %>%
+    select(year, added = n)
+removals <- uses %>%
+    count(year = years.last + 1) %>%
+    select(year, removed = n)
+updates <- counts_by_year %>%
+    merge(additions, all=T ) %>%
+    merge(removals, all=T) %>%
+    {.[is.na(.)] <- 0; .} %>%
+    mutate(active = cumsum(added) - cumsum(removed)) %>%
+    select(-n) %>%
+    filter(year < 2012)
+```
+
+We can now visualize the number of actively-used events each year, as well as additions of new types and retirements of old types.
+
+```{r }
+long_updates <- updates %>% melt(id.var = c('year'), value.name = 'count')
+ggplot(long_updates, aes(x=year, y=count, color=variable)) + geom_line()
+```
+
 
 # Results
 
