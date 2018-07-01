@@ -349,8 +349,8 @@ sort(event_types)</code></pre>
 <p>Our usable data is thus limited to the period from 2007 through 2011. We extract this period for further processing.</p>
 <pre class="r"><code>dat &lt;- dat[(ymd(&quot;2007-1-1&quot;, tz='Etc/GMT+0') &lt;= begin_datetime),]</code></pre>
 </div>
-<div id="transforming-property--and-crop-damage-data" class="section level3">
-<h3>Transforming property- and crop-damage data</h3>
+<div id="transforming-property--and-crop-damuage-data" class="section level3">
+<h3>Transforming property- and crop-damuage data</h3>
 <p>Our property- and crop-damage data appear as fields <code>PROPDMG/CROPDMG</code> (numeric) and <code>PROPDMGEXP/CROPDMGEXP</code> (character). The former appear to be significands, and the latter exponents that we now explore.</p>
 <pre class="r"><code>unique(dat[, PROPDMGEXP])</code></pre>
 <pre><code>## [1] &quot;K&quot; &quot;M&quot; &quot;B&quot; &quot;0&quot;</code></pre>
@@ -394,6 +394,28 @@ str(dat)</code></pre>
 ##  $ crop_damage_multiplier    : Factor w/ 4 levels &quot;1&quot;,&quot;1000&quot;,&quot;1e+06&quot;,..: 2 2 2 2 2 2 2 2 2 2 ...
 ##  $ property_damage           : num  0 6 0 0 20 0 0 0 0 0 ...
 ##  $ crop_damage               : num  0 0 0 0 0 0 0 0 0 0 ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+</div>
+<div id="tidying" class="section level3">
+<h3>Tidying</h3>
+<p>Our final processing step removes unused fields.</p>
+<pre class="r"><code>tidy &lt;- dat %&gt;%
+    select(
+        begin_datetime,
+        event_type = EVTYPE,
+        injuries = INJURIES,
+        fatalities = FATALITIES,
+        property_damage,
+        crop_damage,
+    )
+str(tidy)</code></pre>
+<pre><code>## Classes 'data.table' and 'data.frame':   255108 obs. of  6 variables:
+##  $ begin_datetime : POSIXct, format: &quot;2006-12-31 19:43:00&quot; &quot;2006-12-31 19:39:00&quot; ...
+##  $ event_type     : chr  &quot;BLIZZARD&quot; &quot;THUNDERSTORM WIND&quot; &quot;THUNDERSTORM WIND&quot; &quot;WINTER STORM&quot; ...
+##  $ injuries       : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ fatalities     : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ property_damage: num  0 6 0 0 20 0 0 0 0 0 ...
+##  $ crop_damage    : num  0 0 0 0 0 0 0 0 0 0 ...
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
 </div>
 </div>

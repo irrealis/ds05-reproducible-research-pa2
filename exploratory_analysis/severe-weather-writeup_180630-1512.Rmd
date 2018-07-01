@@ -263,7 +263,7 @@ dat <- dat[(ymd("2007-1-1", tz='Etc/GMT+0') <= begin_datetime),]
 ```
 
 
-### Transforming property- and crop-damage data
+### Transforming property- and crop-damuage data
 
 Our property- and crop-damage data appear as fields `PROPDMG/CROPDMG` (numeric) and `PROPDMGEXP/CROPDMGEXP` (character). The former appear to be significands, and the latter exponents that we now explore.
 
@@ -299,6 +299,24 @@ We can now synthesize property- and crop-damage values.
 dat[, property_damage := PROPDMG * as.numeric(property_damage_multiplier)]
 dat[, crop_damage := CROPDMG * as.numeric(crop_damage_multiplier)]
 str(dat)
+```
+
+
+### Tidying
+
+Our final processing step removes unused fields.
+
+```{r }
+tidy <- dat %>%
+    select(
+        begin_datetime,
+        event_type = EVTYPE,
+        injuries = INJURIES,
+        fatalities = FATALITIES,
+        property_damage,
+        crop_damage,
+    )
+str(tidy)
 ```
 
 
