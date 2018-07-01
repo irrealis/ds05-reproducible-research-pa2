@@ -125,11 +125,11 @@ $(document).ready(function () {
 </div>
 
 
-<div id="synopsis" class="section level2">
-<h2>Synopsis</h2>
+<div id="synopsis" class="section level1">
+<h1>Synopsis</h1>
 </div>
-<div id="data-processing" class="section level2">
-<h2>Data Processing</h2>
+<div id="data-processing" class="section level1">
+<h1>Data Processing</h1>
 <p>We begin by loading required libraries <em>data.table</em> and <em>dplyr</em> for data manipulation, <em>lubridate</em> for handling dates, and <em>ggplot2</em> for plotting.</p>
 <pre class="r"><code>library(data.table)
 library(ggplot2)
@@ -194,6 +194,8 @@ str(dat)</code></pre>
 ##  $ CROPDMG   : num  0 0 0 0 0 0 0 0 0 0 ...
 ##  $ CROPDMGEXP: chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+<div id="initial-assessment-of-dataset-quality" class="section level3">
+<h3>Initial assessment of dataset quality</h3>
 <p>From <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">Storm Data Documentation</a> we expect 48 permitted storm data event types (see sec. 2.1), but find 977 distinct types in our data.</p>
 <pre class="r"><code>length(unique(dat$EVTYPE))</code></pre>
 <pre><code>## [1] 977</code></pre>
@@ -218,8 +220,11 @@ str(dat)</code></pre>
 <p>Only three event types are recorded for the 1950s (and only TORNADO events for the early ’50s).</p>
 <pre class="r"><code>unique(dat[grepl(&quot;195[[:digit:]]&quot;, BGN_DATE, ignore.case = F), EVTYPE])</code></pre>
 <pre><code>## [1] &quot;TORNADO&quot;   &quot;TSTM WIND&quot; &quot;HAIL&quot;</code></pre>
-<p>The <a href="https://www.ncdc.noaa.gov/stormevents/details.jsp">National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page</a> states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the 977 distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis. Accordingly we synthesize a <code>begin_datetime</code> field for each row using <code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code>.</p>
-<p>We first transform <code>TIME_ZONE</code> for compatibility with <em>R</em> and <em>lubridate</em>. Of the distinct values of <code>TIME_ZONE</code>, two appear to be capitalization variants of “EST” and “CST” (<code>ESt</code> and <code>CSt</code>, respectively), one appears to represent “Unknown” (<code>UNK</code>), and three appear to be misspellings (<code>ESY</code>, <code>CSC</code>, and <code>SCT</code>).</p>
+<p>The <a href="https://www.ncdc.noaa.gov/stormevents/details.jsp">National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page</a> states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the 977 distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis.</p>
+</div>
+<div id="time-series-construction" class="section level3">
+<h3>Time series construction</h3>
+<p>Accordingly we synthesize a <code>begin_datetime</code> field for each row using <code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code>. We first transform <code>TIME_ZONE</code> for compatibility with <em>R</em> and <em>lubridate</em>. Of the distinct values of <code>TIME_ZONE</code>, two appear to be capitalization variants of “EST” and “CST” (<code>ESt</code> and <code>CSt</code>, respectively), one appears to represent “Unknown” (<code>UNK</code>), and three appear to be misspellings (<code>ESY</code>, <code>CSC</code>, and <code>SCT</code>).</p>
 <pre class="r"><code>unique(dat$TIME_ZONE)</code></pre>
 <pre><code>##  [1] &quot;CST&quot; &quot;EST&quot; &quot;PST&quot; &quot;MST&quot; &quot;CDT&quot; &quot;PDT&quot; &quot;EDT&quot; &quot;UNK&quot; &quot;HST&quot; &quot;GMT&quot; &quot;MDT&quot;
 ## [12] &quot;AST&quot; &quot;ADT&quot; &quot;CSt&quot; &quot;ESt&quot; &quot;CSC&quot; &quot;SCT&quot; &quot;ESY&quot; &quot;UTC&quot; &quot;SST&quot; &quot;AKS&quot; &quot;GST&quot;</code></pre>
@@ -272,8 +277,9 @@ dat &lt;- dat[!is.na(begin_times)]</code></pre>
 }
 dat[, begin_datetime := convert_to_datetime(BGN_DATE, BGN_TIME, timezone)]</code></pre>
 </div>
-<div id="results" class="section level2">
-<h2>Results</h2>
+</div>
+<div id="results" class="section level1">
+<h1>Results</h1>
 </div>
 
 

@@ -6,9 +6,9 @@ title: "Health and Financial Impact of Severe-Weather Events Between 2005 and 20
 setwd("/media/kaben/Work/Repos/irrealis/ds05-reproducible-research-pa2/exploratory_analysis/")
 ```
 
-## Synopsis
+# Synopsis
 
-## Data Processing
+# Data Processing
 
 We begin by loading required libraries _data.table_ and _dplyr_ for data manipulation, _lubridate_ for handling dates, and _ggplot2_ for plotting.
 
@@ -86,6 +86,9 @@ dat[, c("STATE__", "COUNTY", "COUNTYNAME", "STATE", "BGN_RANGE", "BGN_AZI", "BGN
 str(dat)
 ```
 
+
+### Initial assessment of dataset quality
+
 From [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 permitted storm data event types (see sec. 2.1), but find `r length(unique(dat$EVTYPE))` distinct types in our data.
 
 ```{r }
@@ -111,9 +114,12 @@ Only three event types are recorded for the 1950s (and only `r unique(dat[grepl(
 unique(dat[grepl("195[[:digit:]]", BGN_DATE, ignore.case = F), EVTYPE])
 ```
 
-The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the `r length(unique(dat$EVTYPE))` distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis. Accordingly we synthesize a `begin_datetime` field for each row using `BGN_DATE`, `BGN_TIME`, and `TIME_ZONE`.
+The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the `r length(unique(dat$EVTYPE))` distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis.
 
-We first transform `TIME_ZONE` for compatibility with _R_ and _lubridate_. Of the distinct values of `TIME_ZONE`, two appear to be capitalization variants of "EST" and "CST" (`ESt` and `CSt`, respectively), one appears to represent "Unknown" (`UNK`), and three appear to be misspellings (`ESY`, `CSC`, and `SCT`).
+
+### Time series construction
+
+Accordingly we synthesize a `begin_datetime` field for each row using `BGN_DATE`, `BGN_TIME`, and `TIME_ZONE`. We first transform `TIME_ZONE` for compatibility with _R_ and _lubridate_. Of the distinct values of `TIME_ZONE`, two appear to be capitalization variants of "EST" and "CST" (`ESt` and `CSt`, respectively), one appears to represent "Unknown" (`UNK`), and three appear to be misspellings (`ESY`, `CSC`, and `SCT`).
 
 ```{r }
 unique(dat$TIME_ZONE)
@@ -180,7 +186,7 @@ dat[, begin_datetime := convert_to_datetime(BGN_DATE, BGN_TIME, timezone)]
 ```
 
 
-## Results
+# Results
 
 ```{r , eval=F, include=F, results="hide"}
 library(rmarkdown)
