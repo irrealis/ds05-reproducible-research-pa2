@@ -37,6 +37,14 @@ raw_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv
 raw_fnm <- "StormData.csv.bz2"
 # Raw-data path.
 raw_pth <- file.path(raw_dir, raw_fnm)
+
+# Cached data.
+cch_fnm <- "StormData.csv"
+cch_pth <- file.path(int_dir, cch_fnm)
+
+# Tidy data.
+tdy_fnm <- "StormData-Tidy.csv"
+tdy_pth <- file.path(cln_dir, tdy_fnm)
 ```
 
 We create any missing analysis subdirectories.
@@ -86,7 +94,7 @@ dat <- dat %>%
 ```
 
 
-### Initial assessment of dataset quality: event types
+### Initial quality assessment: event types
 
 From section 2.1 of the [National Weather Service (NWS) storm data documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 permitted storm data event types, but find `r length(unique(dat$EVTYPE))` distinct types in our data.
 
@@ -352,12 +360,13 @@ dat[, property_damage := PROPDMG * as.numeric(property_damage_multiplier)]
 dat[, crop_damage := CROPDMG * as.numeric(crop_damage_multiplier)]
 ```
 
+
 ### Tidying
 
 Our final processing step removes unused fields.
 
 ```{r }
-tidy <- dat %>%
+tdy <- dat %>%
     select(
         begin_datetime,
         event_type,
@@ -366,7 +375,6 @@ tidy <- dat %>%
         property_damage,
         crop_damage,
     )
-str(tidy)
 ```
 
 These fields have the following meaning:
@@ -377,6 +385,18 @@ These fields have the following meaning:
 - `fatalities`: Number of direct fatalities caused by event. Type: integer.
 - `property_damage`: Dollar amount of direct property damage caused by event. Type: numeric.
 - `crop_damage`: Dollar amount of direct crop damage caused by event. Type: numeric.
+
+We verify no missing integer and numeric data.
+
+```{r }
+with(tdy, sum(is.na(c(injuries, fatalities, property_damage, crop_damage))))
+```
+
+Finally, we save the tidy data.
+
+```{r }
+fwrite(tdy, tdy_pth)
+```
 
 
 # Results
