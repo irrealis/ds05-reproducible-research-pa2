@@ -159,7 +159,7 @@ cch_pth &lt;- file.path(int_dir, cch_fnm)
 # Tidy data.
 tdy_fnm &lt;- &quot;StormData-Tidy.csv&quot;
 tdy_pth &lt;- file.path(cln_dir, tdy_fnm)</code></pre>
-<p>We create any missing analysis subdirectories.</p>
+<p>We create missing analysis subdirectories.</p>
 <pre class="r"><code>if(!dir.exists(dat_dir)){ dir.create(dat_dir) }
 if(!dir.exists(raw_dir)){ dir.create(raw_dir) }
 if(!dir.exists(int_dir)){ dir.create(int_dir) }
@@ -172,9 +172,9 @@ if(!dir.exists(cln_dir)){ dir.create(cln_dir) }</code></pre>
     }
     fread(dat_pth_)
 }</code></pre>
-<p>We then load raw data.</p>
+<p>We load raw data.</p>
 <pre class="r"><code>dat &lt;- fetch_if_missing_then_load(raw_url, raw_pth, cch_pth)</code></pre>
-<p>This analysis uses the following columns:</p>
+<p>We will process the following columns. We discard the rest.</p>
 <ul>
 <li><code>EVTYPE</code> (weather-event types)</li>
 <li><code>FATALITIES</code> and <code>INJURIES</code></li>
@@ -182,7 +182,6 @@ if(!dir.exists(cln_dir)){ dir.create(cln_dir) }</code></pre>
 <li><code>CROPDMG</code> and <code>CROPDMGEXP</code> (crop-damage values)</li>
 <li><code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code> (weather-event starting dates and times)</li>
 </ul>
-<p>We discard all others.</p>
 <pre class="r"><code>dat &lt;- dat %&gt;%
     select(
         EVTYPE, BGN_DATE, BGN_TIME, TIME_ZONE,
@@ -191,10 +190,10 @@ if(!dir.exists(cln_dir)){ dir.create(cln_dir) }</code></pre>
     data.table()</code></pre>
 <div id="initial-quality-assessment-event-types" class="section level3">
 <h3>Initial quality assessment: event types</h3>
-<p>From section 2.1 of the <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">National Weather Service (NWS) storm data documentation</a> we expect 48 permitted storm data event types, but find 977 distinct types in our data.</p>
+<p>From section 2.1 of the <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">National Weather Service (NWS) storm data documentation</a> we expect 48 storm data event types, but find 977.</p>
 <pre class="r"><code>length(unique(dat$EVTYPE))</code></pre>
 <pre><code>## [1] 977</code></pre>
-<p>The first few events suggest that spelling variants and event conflations are causes. For example, <code>TSTM WIND</code>, <code>THUNDERSTORM WINDS</code>, <code>THUNDERSTORM WIND</code>, <code>THUNDERSTORM WINS</code> all appear to represent “Thunderstorm Wind”, and <code>HURRICANE OPAL/HIGH WINDS</code> represents two separate (if related) event types.</p>
+<p>Causes include spelling variants and event conflations. For example, <code>TSTM WIND</code>, <code>THUNDERSTORM WINDS</code>, <code>THUNDERSTORM WIND</code>, <code>THUNDERSTORM WINS</code> all appear to represent “Thunderstorm Wind”, while <code>HURRICANE OPAL/HIGH WINDS</code> conflates two distinct event types. Use of spelling variants requires extensive curation during processing. Event conflation suggests different recording methods at different times, which may prevent comparative analysis.</p>
 <pre class="r"><code>unique(dat$EVTYPE)[1:20]</code></pre>
 <pre><code>##  [1] &quot;TORNADO&quot;                   &quot;TSTM WIND&quot;                
 ##  [3] &quot;HAIL&quot;                      &quot;FREEZING RAIN&quot;            
@@ -206,24 +205,18 @@ if(!dir.exists(cln_dir)){ dir.create(cln_dir) }</code></pre>
 ## [15] &quot;LIGHTNING&quot;                 &quot;THUNDERSTORM WIND&quot;        
 ## [17] &quot;DENSE FOG&quot;                 &quot;RIP CURRENT&quot;              
 ## [19] &quot;THUNDERSTORM WINS&quot;         &quot;FLASH FLOOD&quot;</code></pre>
-<p>Some 73 rows appear to summarize other events, but record no injuries, fatalities, or property/crop damage, so should be excluded from analysis.</p>
-<pre class="r"><code>dat[grepl(&quot;Summary&quot;, EVTYPE, ignore.case = F), EVTYPE][1:5]</code></pre>
-<pre><code>## [1] &quot;Summary Jan 17&quot;       &quot;Summary of March 14&quot;  &quot;Summary of March 23&quot; 
-## [4] &quot;Summary of March 24&quot;  &quot;Summary of April 3rd&quot;</code></pre>
-<pre class="r"><code>sum(dat[grepl(&quot;Summary&quot;, EVTYPE, ignore.case = F), c(INJURIES, FATALITIES, PROPDMG, CROPDMG)])</code></pre>
-<pre><code>## [1] 0</code></pre>
-<p>Only three event types are recorded for the 1950s (and only TORNADO events for the early ’50s).</p>
+<p>Only three event types are recorded for the 1950s (and only TORNADO events for the early ’50s). This indicates sampling of different populations at different times, which may prevent comparative analysis.</p>
 <pre class="r"><code>unique(dat[grepl(&quot;195[[:digit:]]&quot;, BGN_DATE, ignore.case = F), EVTYPE])</code></pre>
 <pre><code>## [1] &quot;TORNADO&quot;   &quot;TSTM WIND&quot; &quot;HAIL&quot;</code></pre>
-<p>The <a href="https://www.ncdc.noaa.gov/stormevents/details.jsp">National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page</a> states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. But it also states that 48 event types are used for 1996 to present, which disagrees with our 977 distinct types. On the other hand, this suggests that constructing a time series may help to identify and extract a dataset suitable for analysis.</p>
+<p>The <a href="https://www.ncdc.noaa.gov/stormevents/details.jsp">National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page</a> states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. But it also states that 48 event types are used for 1996 to present, which disagrees with our 977 distinct types. On the other hand, this suggests that constructing a time series may help to identify and extract a dataset suitable for our analysis.</p>
 </div>
 <div id="time-series-construction" class="section level3">
 <h3>Time series construction</h3>
-<p>Accordingly we synthesize a <code>begin_datetime</code> field for each row using <code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code>. We first transform <code>TIME_ZONE</code> for compatibility with <em>R</em> and <em>lubridate</em>. Of the distinct values of <code>TIME_ZONE</code>, two appear to be capitalization variants of “EST” and “CST” (<code>ESt</code> and <code>CSt</code>, respectively), one appears to represent “Unknown” (<code>UNK</code>), and three appear to be misspellings (<code>ESY</code>, <code>CSC</code>, and <code>SCT</code>).</p>
+<p>Accordingly we synthesize a <code>begin_datetime</code> field for each row using <code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code>. We transform <code>TIME_ZONE</code> values for compatibility with <em>R</em> and <em>lubridate</em>. Of the distinct values, two appear to be capitalization variants of “EST” and “CST” (<code>ESt</code> and <code>CSt</code>, respectively), one appears to represent “Unknown” (<code>UNK</code>), and three appear to be misspellings (<code>ESY</code>, <code>CSC</code>, and <code>SCT</code>).</p>
 <pre class="r"><code>unique(dat$TIME_ZONE)</code></pre>
 <pre><code>##  [1] &quot;CST&quot; &quot;EST&quot; &quot;PST&quot; &quot;MST&quot; &quot;CDT&quot; &quot;PDT&quot; &quot;EDT&quot; &quot;UNK&quot; &quot;HST&quot; &quot;GMT&quot; &quot;MDT&quot;
 ## [12] &quot;AST&quot; &quot;ADT&quot; &quot;CSt&quot; &quot;ESt&quot; &quot;CSC&quot; &quot;SCT&quot; &quot;ESY&quot; &quot;UTC&quot; &quot;SST&quot; &quot;AKS&quot; &quot;GST&quot;</code></pre>
-<p>We construct and apply the transformation, then remove rows with unknown or misspelled values for <code>TIME_ZONE</code>.</p>
+<p>We construct and apply the transformation, then remove rows with unknown or misspelled <code>TIME_ZONE</code> values.</p>
 <pre class="r"><code>timezone_transform &lt;- data.frame(rbind(
     c(&quot;SST&quot;, &quot;Etc/GMT-11&quot;), # Samoa
     c(&quot;GST&quot;, &quot;Etc/GMT-10&quot;), # Guam
@@ -252,12 +245,12 @@ names(timezone_transform) &lt;- c(&quot;TIME_ZONE&quot;, 'timezone')
 dat &lt;- merge(dat, timezone_transform, sort=F)
 rows_removed &lt;- nrow(dat[timezone == &quot;NA&quot;,])
 dat &lt;- dat[timezone != &quot;NA&quot;,]</code></pre>
-<p>This has removed 13 rows. We also remove rows with bad <code>BGN_TIME</code> values.</p>
+<p>This removed 13 rows. We also remove rows with bad <code>BGN_TIME</code> values.</p>
 <pre class="r"><code>begin_times &lt;- parse_date_time(dat$BGN_TIM, c(&quot;HM&quot;, &quot;HMS&quot;))</code></pre>
 <pre><code>## Warning: 5 failed to parse.</code></pre>
 <pre class="r"><code>bad_begin_times &lt;- dat[is.na(begin_times), BGN_TIME]
 dat &lt;- dat[!is.na(begin_times)]</code></pre>
-<p>This has removed 5 rows with begin times 1990, 9999, 2090, 1580, 0572. We now synthesize <code>begin_datetime</code> values.</p>
+<p>This removed 5 rows with begin times 1990, 9999, 2090, 1580, 0572. We can now synthesize <code>begin_datetime</code> values.</p>
 <pre class="r"><code>convert_to_datetime &lt;- function(date_, time_, tz_){
     psx_date_ &lt;- parse_date_time(date_, &quot;mdY HMS&quot;)
     psx_time_ &lt;- parse_date_time(time_, c(&quot;HM&quot;, &quot;HMS&quot;))
@@ -281,7 +274,7 @@ dat[, begin_datetime := convert_to_datetime(BGN_DATE, BGN_TIME, timezone)]</code
     unique() %&gt;%
     count(year) %&gt;%
     data.table()</code></pre>
-<p>We add to this the number of new event types added or removed each year.</p>
+<p>We also extract the number of new event types added or removed each year.</p>
 <pre class="r"><code>uses &lt;- do.call(data.table, with(dat,
     aggregate(
         cbind(years = year(begin_datetime)),
@@ -352,7 +345,7 @@ sort(event_types)</code></pre>
 <h3>Extracting permitted events</h3>
 <p>Our usable data is thus limited to the period from 2007 through 2011. We extract this period for further processing.</p>
 <pre class="r"><code>dat &lt;- dat[(ymd(&quot;2007-1-1&quot;, tz='Etc/GMT+0') &lt;= begin_datetime),]</code></pre>
-<p>To simplify troubleshooting, we map <code>EVTYPE</code> to names listed in table 1, section 2.1.1 of NWSI 10-1605. In particular, <code>LANDSLIDE</code> maps to “Debris Flow”, <code>HURRICANE</code> to “Hurricane (Typhoon)”, and <code>VOLCANIC ASHFALL</code> to “Volcanic Ash”. All other mappings simply change capitalization.</p>
+<p>To simplify troubleshooting we map <code>EVTYPE</code> values to names listed in NWSI 10-1605. <code>LANDSLIDE</code> maps to “Debris Flow”, <code>HURRICANE</code> to “Hurricane (Typhoon)”, and <code>VOLCANIC ASHFALL</code> to “Volcanic Ash”. The remainder change capitalization only.</p>
 <pre class="r"><code>event_transform &lt;- data.frame(rbind(
     c(&quot;ASTRONOMICAL LOW TIDE&quot;, &quot;Astronomical Low Tide&quot;),
     c(&quot;AVALANCHE&quot;, &quot;Avalanche&quot;),
@@ -421,7 +414,7 @@ dat &lt;- merge(dat, event_transform, sort=F)</code></pre>
 ## 1:       0          K          0        0 Etc/GMT+5 2011-07-27 08:30:00
 ##     event_type
 ## 1: Flash Flood</code></pre>
-<p>Use of symbols ‘K’ (thousands), ‘M’ (millions), and ‘B’ (billions) is consistent with NWSI 10-1605 documentation. Thus we apply the following transformation:</p>
+<p>Use of symbols ‘K’ (thousands), ‘M’ (millions), and ‘B’ (billions) is consistent with NWSI 10-1605 documentation. We transform exponent symbols to numeric multipliers.</p>
 <pre class="r"><code>damage_exponent_transform &lt;- data.frame(rbind(
     c(&quot;B&quot;, 1e9), # Billion
     c(&quot;M&quot;, 1e6), # Million
@@ -448,20 +441,37 @@ dat[, crop_damage := CROPDMG * as.numeric(crop_damage_multiplier)]</code></pre>
         property_damage,
         crop_damage,
     )</code></pre>
-<p>These fields have the following meaning:</p>
+<p>The remaining tidy fields have the following meanings:</p>
 <ul>
 <li><code>event_type</code>: One of 48 permitted storm-event types listed in NWSI 10-1605 as of August 17, 2007. Type: factor.</li>
-<li><code>begin_datetime</code>: Date and time at start of event. Type: <code>POSIXct</code>.</li>
-<li><code>injuries</code>: Number of direct injuries caused by event. Type: integer.</li>
-<li><code>fatalities</code>: Number of direct fatalities caused by event. Type: integer.</li>
-<li><code>property_damage</code>: Dollar amount of direct property damage caused by event. Type: numeric.</li>
-<li><code>crop_damage</code>: Dollar amount of direct crop damage caused by event. Type: numeric.</li>
+<li><code>begin_datetime</code>: The date and time at start of the event. Type: <code>POSIXct</code>.</li>
+<li><code>injuries</code>: The number of direct injuries caused by the event. Type: integer.</li>
+<li><code>fatalities</code>: The number of direct fatalities caused by the event. Type: integer.</li>
+<li><code>property_damage</code>: The dollar amount of direct property damage caused by the event. Type: numeric.</li>
+<li><code>crop_damage</code>: The dollar amount of direct crop damage caused by event. Type: numeric.</li>
 </ul>
-<p>We verify no missing integer and numeric data.</p>
+<p>We verify that no integer or numeric data are missing.</p>
 <pre class="r"><code>with(tdy, sum(is.na(c(injuries, fatalities, property_damage, crop_damage))))</code></pre>
 <pre><code>## [1] 0</code></pre>
 <p>Finally, we save the tidy data.</p>
 <pre class="r"><code>fwrite(tdy, tdy_pth)</code></pre>
+</div>
+<div id="quality-assessment-consequences-of-limiting-data-to-a-five-year-span" class="section level3">
+<h3>Quality assessment: consequences of limiting data to a five-year span</h3>
+<p>Our usable data cannot answer our original questions. We develop an explanation below, first discussing problems preventing comparative analysis, their solutions, and problems caused by those solutions. The latter prevent answering our original questions. In their place we will pose limited versions our data <em>can</em> answer.</p>
+<p>In the original data, the number of distinct event types ranges from one to over 400 for any given year. This has at least three causes:</p>
+<ul>
+<li>At different times, very different populations of event types were sampled.</li>
+<li>At different times, very different recording methods were used. At times multiple events of different types were sytematically recorded in single observations. at other times such events were systematically recorded separately.</li>
+<li>There are many examples of events of a single type designated at different times by different spellings.</li>
+</ul>
+<p>Different populations and methods at different times result in incomparable data, prevent comparative analysis. Different spellings require extensive by-hand curation during processing. We solve these problems by constraining our dataset to the 48 permitted events listed in NWSI 10-1605, which permits comparative analysis.</p>
+<p>But in doing so we discard over 65 years of data. The remainder span five years, or less than ten percent. Moreover, four global El Niño events lasting over five years occurred from 1950 to 2011, with several strong interspersed La Niña events associated with distinctly different weather. Weather during El Niño and La Niña are not comparable, and the period spanned by our remaining data coincides with predominantly La Niña events. Consequently, the conclusions in this analysis cannot generalize to certain other, or larger, time spans, so cannot answer with generality the posed questions.</p>
+<p>We can instead answer the more limited questions:</p>
+<ul>
+<li>Across the United States <em>from 2007 to 2011</em>, which types of events are most harmful to population health?</li>
+<li>Across the United States <em>from 2007 to 2011</em>, which types of events have the greatest economic cost?</li>
+</ul>
 </div>
 </div>
 <div id="results" class="section level1">
