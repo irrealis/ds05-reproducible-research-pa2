@@ -130,12 +130,12 @@ $(document).ready(function () {
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
-<p>R libraries <em>data.table</em> and <em>dplyr</em> are used for data manipulation, <em>lubridate</em> for handling dates, and <em>ggplot2</em> for plotting.</p>
+<p>We begin by loading required libraries <em>data.table</em> and <em>dplyr</em> for data manipulation, <em>lubridate</em> for handling dates, and <em>ggplot2</em> for plotting.</p>
 <pre class="r"><code>library(data.table)
 library(ggplot2)
 library(dplyr)
 library(lubridate)</code></pre>
-<p>We begin by setting hard-coded parameters for this analysis, most importantly the URL for raw data. The remaining convenience parameters organize analysis files.</p>
+<p>We set hard-coded analysis parameters, most importantly the raw data URL. The remaining convenience parameters organize analysis files.</p>
 <pre class="r"><code># Data subdirectory.
 dat_dir &lt;- &quot;data&quot;
 # Raw data subdirectory.
@@ -178,8 +178,47 @@ if(!dir.exists(cln_dir)){ dir.create(cln_dir) }</code></pre>
 <li><code>CROPDMG</code> and <code>CROPDMGEXP</code> (crop-damage values)</li>
 <li><code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code> (weather-event starting dates and times)</li>
 </ul>
-<p>The remainder are discarded.</p>
-<pre class="r"><code>dat[, c(&quot;STATE__&quot;, &quot;COUNTY&quot;, &quot;COUNTYNAME&quot;, &quot;STATE&quot;, &quot;BGN_RANGE&quot;, &quot;BGN_AZI&quot;, &quot;BGN_LOCATI&quot;, &quot;END_DATE&quot;, &quot;END_TIME&quot;, &quot;COUNTY_END&quot;, &quot;COUNTYENDN&quot;, &quot;END_RANGE&quot;, &quot;END_AZI&quot;, &quot;END_LOCATI&quot;, &quot;LENGTH&quot;, &quot;WIDTH&quot;, &quot;F&quot;, &quot;MAG&quot;, &quot;WFO&quot;, &quot;STATEOFFIC&quot;, &quot;ZONENAMES&quot;, &quot;LATITUDE&quot;, &quot;LONGITUDE&quot;, &quot;LATITUDE_E&quot;, &quot;LONGITUDE_&quot;, &quot;REMARKS&quot;, &quot;REFNUM&quot;) := NULL]</code></pre>
+<p>We discard all others, and verify the desired columns are present.</p>
+<pre class="r"><code>dat[, c(&quot;STATE__&quot;, &quot;COUNTY&quot;, &quot;COUNTYNAME&quot;, &quot;STATE&quot;, &quot;BGN_RANGE&quot;, &quot;BGN_AZI&quot;, &quot;BGN_LOCATI&quot;, &quot;END_DATE&quot;, &quot;END_TIME&quot;, &quot;COUNTY_END&quot;, &quot;COUNTYENDN&quot;, &quot;END_RANGE&quot;, &quot;END_AZI&quot;, &quot;END_LOCATI&quot;, &quot;LENGTH&quot;, &quot;WIDTH&quot;, &quot;F&quot;, &quot;MAG&quot;, &quot;WFO&quot;, &quot;STATEOFFIC&quot;, &quot;ZONENAMES&quot;, &quot;LATITUDE&quot;, &quot;LONGITUDE&quot;, &quot;LATITUDE_E&quot;, &quot;LONGITUDE_&quot;, &quot;REMARKS&quot;, &quot;REFNUM&quot;) := NULL]
+
+str(dat)</code></pre>
+<pre><code>## Classes 'data.table' and 'data.frame':   902297 obs. of  10 variables:
+##  $ BGN_DATE  : chr  &quot;4/18/1950 0:00:00&quot; &quot;4/18/1950 0:00:00&quot; &quot;2/20/1951 0:00:00&quot; &quot;6/8/1951 0:00:00&quot; ...
+##  $ BGN_TIME  : chr  &quot;0130&quot; &quot;0145&quot; &quot;1600&quot; &quot;0900&quot; ...
+##  $ TIME_ZONE : chr  &quot;CST&quot; &quot;CST&quot; &quot;CST&quot; &quot;CST&quot; ...
+##  $ EVTYPE    : chr  &quot;TORNADO&quot; &quot;TORNADO&quot; &quot;TORNADO&quot; &quot;TORNADO&quot; ...
+##  $ FATALITIES: int  0 0 0 0 0 0 0 0 1 0 ...
+##  $ INJURIES  : int  15 0 2 2 2 6 1 0 14 0 ...
+##  $ PROPDMG   : num  25 2.5 25 2.5 2.5 2.5 2.5 2.5 25 25 ...
+##  $ PROPDMGEXP: chr  &quot;K&quot; &quot;K&quot; &quot;K&quot; &quot;K&quot; ...
+##  $ CROPDMG   : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ CROPDMGEXP: chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+<p>From <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">Storm Data Documentation</a> we expect 48 permitted storm data event types (see sec. 2.1), but find 977 distinct types in our data.</p>
+<pre class="r"><code>length(unique(dat$EVTYPE))</code></pre>
+<pre><code>## [1] 977</code></pre>
+<p>The first few events suggest that spelling variants and event conflations are causes. For example, <code>TSTM WIND</code>, <code>THUNDERSTORM WINDS</code>, <code>THUNDERSTORM WIND</code>, <code>THUNDERSTORM WINS</code> all appear to represent “Thunderstorm Wind”, and <code>HURRICANE OPAL/HIGH WINDS</code> represents two separate (if related) event types.</p>
+<pre class="r"><code>unique(dat$EVTYPE)[1:20]</code></pre>
+<pre><code>##  [1] &quot;TORNADO&quot;                   &quot;TSTM WIND&quot;                
+##  [3] &quot;HAIL&quot;                      &quot;FREEZING RAIN&quot;            
+##  [5] &quot;SNOW&quot;                      &quot;ICE STORM/FLASH FLOOD&quot;    
+##  [7] &quot;SNOW/ICE&quot;                  &quot;WINTER STORM&quot;             
+##  [9] &quot;HURRICANE OPAL/HIGH WINDS&quot; &quot;THUNDERSTORM WINDS&quot;       
+## [11] &quot;RECORD COLD&quot;               &quot;HURRICANE ERIN&quot;           
+## [13] &quot;HURRICANE OPAL&quot;            &quot;HEAVY RAIN&quot;               
+## [15] &quot;LIGHTNING&quot;                 &quot;THUNDERSTORM WIND&quot;        
+## [17] &quot;DENSE FOG&quot;                 &quot;RIP CURRENT&quot;              
+## [19] &quot;THUNDERSTORM WINS&quot;         &quot;FLASH FLOOD&quot;</code></pre>
+<p>Some 73 rows appear to summarize other events, but record no injuries, fatalities, or property/crop damage, so should be excluded from analysis.</p>
+<pre class="r"><code>dat[grepl(&quot;Summary&quot;, EVTYPE, ignore.case = F), EVTYPE][1:5]</code></pre>
+<pre><code>## [1] &quot;Summary Jan 17&quot;       &quot;Summary of March 14&quot;  &quot;Summary of March 23&quot; 
+## [4] &quot;Summary of March 24&quot;  &quot;Summary of April 3rd&quot;</code></pre>
+<pre class="r"><code>sum(dat[grepl(&quot;Summary&quot;, EVTYPE, ignore.case = F), c(INJURIES, FATALITIES, PROPDMG, CROPDMG)])</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p>Only three event types are recorded for the 1950s (and only TORNADO events for the early ’50s).</p>
+<pre class="r"><code>unique(dat[grepl(&quot;195[[:digit:]]&quot;, BGN_DATE, ignore.case = F), EVTYPE])</code></pre>
+<pre><code>## [1] &quot;TORNADO&quot;   &quot;TSTM WIND&quot; &quot;HAIL&quot;</code></pre>
+<p>The <a href="https://www.ncdc.noaa.gov/stormevents/details.jsp">National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page</a> states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the 977 distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis. Accordingly we synthesize a <code>begin_datetime</code> field for each row using <code>BGN_DATE</code>, <code>BGN_TIME</code>, and <code>TIME_ZONE</code>.</p>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>

@@ -2,11 +2,15 @@
 title: "Health and Financial Impact of Severe-Weather Events Between 2005 and 2011"
 ---
 
+```{r , eval=F, include=F, results="hide"}
+setwd("/media/kaben/Work/Repos/irrealis/ds05-reproducible-research-pa2/exploratory_analysis/")
+```
+
 ## Synopsis
 
 ## Data Processing
 
-R libraries _data.table_ and _dplyr_ are used for data manipulation, _lubridate_ for handling dates, and _ggplot2_ for plotting.
+We begin by loading required libraries _data.table_ and _dplyr_ for data manipulation, _lubridate_ for handling dates, and _ggplot2_ for plotting.
 
 ```{r }
 library(data.table)
@@ -15,7 +19,7 @@ library(dplyr)
 library(lubridate)
 ```
 
-We begin by setting hard-coded parameters for this analysis, most importantly the URL for raw data. The remaining convenience parameters organize analysis files.
+We set hard-coded analysis parameters, most importantly the raw data URL. The remaining convenience parameters organize analysis files.
 
 ```{r }
 # Data subdirectory.
@@ -74,11 +78,42 @@ This analysis uses the following columns:
 - `CROPDMG` and `CROPDMGEXP` (crop-damage values)
 - `BGN_DATE`, `BGN_TIME`, and `TIME_ZONE` (weather-event starting dates and times)
 
-The remainder are discarded.
+We discard all others, and verify the desired columns are present.
 
 ```{r }
 dat[, c("STATE__", "COUNTY", "COUNTYNAME", "STATE", "BGN_RANGE", "BGN_AZI", "BGN_LOCATI", "END_DATE", "END_TIME", "COUNTY_END", "COUNTYENDN", "END_RANGE", "END_AZI", "END_LOCATI", "LENGTH", "WIDTH", "F", "MAG", "WFO", "STATEOFFIC", "ZONENAMES", "LATITUDE", "LONGITUDE", "LATITUDE_E", "LONGITUDE_", "REMARKS", "REFNUM") := NULL]
+
+str(dat)
 ```
+
+From [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 permitted storm data event types (see sec. 2.1), but find `r length(unique(dat$EVTYPE))` distinct types in our data.
+
+```{r }
+length(unique(dat$EVTYPE))
+```
+
+The first few events suggest that spelling variants and event conflations are causes. For example, `TSTM WIND`, `THUNDERSTORM WINDS`, `THUNDERSTORM WIND`, `THUNDERSTORM WINS` all appear to represent "Thunderstorm Wind", and `HURRICANE OPAL/HIGH WINDS` represents two separate (if related) event types.
+
+```{r }
+unique(dat$EVTYPE)[1:20]
+```
+
+Some `r length(dat[grepl("Summary", EVTYPE, ignore.case = F), EVTYPE])` rows appear to summarize other events, but record no injuries, fatalities, or property/crop damage, so should be excluded from analysis.
+
+```{r }
+dat[grepl("Summary", EVTYPE, ignore.case = F), EVTYPE][1:5]
+sum(dat[grepl("Summary", EVTYPE, ignore.case = F), c(INJURIES, FATALITIES, PROPDMG, CROPDMG)])
+```
+
+Only three event types are recorded for the 1950s (and only `r unique(dat[grepl("1951", BGN_DATE, ignore.case = F), EVTYPE])` events for the early '50s).
+
+```{r }
+unique(dat[grepl("195[[:digit:]]", BGN_DATE, ignore.case = F), EVTYPE])
+```
+
+The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the `r length(unique(dat$EVTYPE))` distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis. Accordingly we synthesize a `begin_datetime` field for each row using `BGN_DATE`, `BGN_TIME`, and `TIME_ZONE`.
+
+
 
 ## Results
 
