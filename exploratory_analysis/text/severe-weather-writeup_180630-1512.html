@@ -344,6 +344,11 @@ sort(event_types)</code></pre>
 <pre><code>## [1] 48</code></pre>
 <p>These types are exactly the permitted storm data events listed in table 1, section 2.1.1 of the <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">National Weather Service Instruction (NWSI) 10-1605</a> dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint).</p>
 </div>
+<div id="extracting-permitted-events" class="section level3">
+<h3>Extracting permitted events</h3>
+<p>Our usable data is thus limited to the period from 2007 through 2011. We extract this period for further processing.</p>
+<pre class="r"><code>dat &lt;- dat[(ymd(&quot;2007-1-1&quot;, tz='Etc/GMT+0') &lt;= begin_datetime),]</code></pre>
+</div>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
