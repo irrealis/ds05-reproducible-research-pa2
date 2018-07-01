@@ -113,6 +113,47 @@ unique(dat[grepl("195[[:digit:]]", BGN_DATE, ignore.case = F), EVTYPE])
 
 The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. However, the page states that 48 event types are used for 1996 to present, which does not explain the `r length(unique(dat$EVTYPE))` distinct types we find. But it suggests construction of a time series as part of a processing strategy to identify and extract a dataset suitable for analysis. Accordingly we synthesize a `begin_datetime` field for each row using `BGN_DATE`, `BGN_TIME`, and `TIME_ZONE`.
 
+We first transform `TIME_ZONE` for compatibility with _R_ and _lubridate_. Of the distinct values of `TIME_ZONE`, two appear to be capitalization variants of "EST" and "CST" (`ESt` and `CSt`, respectively), one appears to represent "Unknown" (`UNK`), and three appear to be misspellings (`ESY`, `CSC`, and `SCT`).
+
+```{r }
+unique(dat$TIME_ZONE)
+```
+
+We construct and apply the transformation, then remove rows with unknown or misspelled values for `TIME_ZONE`.
+
+```{r }
+timezone_transform <- data.frame(rbind(
+    c("SST", "Etc/GMT-11"), # Samoa
+    c("GST", "Etc/GMT-10"), # Guam
+    c("UNK", "NA"), # Unknown
+    c("UTC", "Etc/GMT+0"),
+    c("GMT", "Etc/GMT+0"), # UTC
+    c("ADT", "Etc/GMT+3"),
+    c("AST", "Etc/GMT+4"),
+    c("EDT", "Etc/GMT+4"),
+    c("EST", "Etc/GMT+5"),
+    c("ESt", "Etc/GMT+5"), # EST
+    c("ESY", "NA"), # EST
+    c("CDT", "Etc/GMT+5"),
+    c("CST", "Etc/GMT+6"),
+    c("CSt", "Etc/GMT+6"), # CST
+    c("CSC", "NA"), # CST
+    c("SCT", "NA"), # CST
+    c("MDT", "Etc/GMT+6"),
+    c("MST", "Etc/GMT+7"),
+    c("PDT", "Etc/GMT+7"),
+    c("PST", "Etc/GMT+8"),
+    c("AKS", "Etc/GMT+9"),
+    c("HST", "Etc/GMT+10")
+))
+names(timezone_transform) <- c("TIME_ZONE", 'timezone')
+dat <- merge(dat, timezone_transform, sort=F)
+rows_removed <- nrow(dat[timezone == "NA",])
+dat <- dat[timezone != "NA",]
+```
+
+This has removed `r rows_removed` rows.
+
 
 
 ## Results
