@@ -252,7 +252,12 @@ names(timezone_transform) &lt;- c(&quot;TIME_ZONE&quot;, 'timezone')
 dat &lt;- merge(dat, timezone_transform, sort=F)
 rows_removed &lt;- nrow(dat[timezone == &quot;NA&quot;,])
 dat &lt;- dat[timezone != &quot;NA&quot;,]</code></pre>
-<p>This has removed 13 rows.</p>
+<p>This has removed 13 rows. We also remove rows with bad <code>BGN_TIME</code> values.</p>
+<pre class="r"><code>begin_times &lt;- parse_date_time(dat$BGN_TIM, c(&quot;HM&quot;, &quot;HMS&quot;))</code></pre>
+<pre><code>## Warning: 5 failed to parse.</code></pre>
+<pre class="r"><code>bad_begin_times &lt;- dat[is.na(begin_times), BGN_TIME]
+dat &lt;- dat[!is.na(begin_times)]</code></pre>
+<p>This has removed 5 rows with begin times 1990, 9999, 2090, 1580, 0572.</p>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>

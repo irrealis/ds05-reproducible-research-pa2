@@ -152,8 +152,16 @@ rows_removed <- nrow(dat[timezone == "NA",])
 dat <- dat[timezone != "NA",]
 ```
 
-This has removed `r rows_removed` rows.
+This has removed `r rows_removed` rows. We also remove rows with bad `BGN_TIME` values.
 
+
+```{r }
+begin_times <- parse_date_time(dat$BGN_TIM, c("HM", "HMS"))
+bad_begin_times <- dat[is.na(begin_times), BGN_TIME]
+dat <- dat[!is.na(begin_times)]
+```
+
+This has removed `r length(bad_begin_times)` rows with begin times `r bad_begin_times`.
 
 
 ## Results
