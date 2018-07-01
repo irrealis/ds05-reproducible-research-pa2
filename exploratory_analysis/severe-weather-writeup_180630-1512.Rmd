@@ -37,10 +37,6 @@ raw_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv
 raw_fnm <- "StormData.csv.bz2"
 # Raw-data path.
 raw_pth <- file.path(raw_dir, raw_fnm)
-
-# Cached data.
-cch_fnm <- "StormData.csv"
-cch_pth <- file.path(int_dir, cch_fnm)
 ```
 
 We create any missing analysis subdirectories.
@@ -262,8 +258,64 @@ Our usable data is thus limited to the period from 2007 through 2011. We extract
 dat <- dat[(ymd("2007-1-1", tz='Etc/GMT+0') <= begin_datetime),]
 ```
 
+To simplify troubleshooting, we map `EVTYPE` to names listed in table 1, section 2.1.1 of NWSI 10-1605. In particular, `LANDSLIDE` maps to "Debris Flow", `HURRICANE` to "Hurricane (Typhoon)", and `VOLCANIC ASHFALL` to "Volcanic Ash". All other mappings simply change capitalization.
+```{r }
+event_transform <- data.frame(rbind(
+    c("ASTRONOMICAL LOW TIDE", "Astronomical Low Tide"),
+    c("AVALANCHE", "Avalanche"),
+    c("BLIZZARD", "Blizzard"),
+    c("COASTAL FLOOD", "Coastal Flood"),
+    c("COLD/WIND CHILL", "Cold/Wind Chill"),
+    c("LANDSLIDE", "Debris Flow"),
+    c("DENSE FOG", "Dense Fog"),
+    c("DENSE SMOKE", "Dense Smoke"),
+    c("DROUGHT", "Drought"),
+    c("DUST DEVIL", "Dust Devil"),
+    c("DUST STORM", "Dust Storm"),
+    c("EXCESSIVE HEAT", "Excessive Heat"),
+    c("EXTREME COLD/WIND CHILL", "Extreme Cold/Wind Chill"),
+    c("FLASH FLOOD", "Flash Flood"),
+    c("FLOOD", "Flood"),
+    c("FREEZING FOG", "Freezing Fog"),
+    c("FROST/FREEZE", "Frost/Freeze"),
+    c("FUNNEL CLOUD", "Funnel Cloud"),
+    c("HAIL", "Hail"),
+    c("HEAT", "Heat"),
+    c("HEAVY RAIN", "Heavy Rain"),
+    c("HEAVY SNOW", "Heavy Snow"),
+    c("HIGH SURF", "High Surf"),
+    c("HIGH WIND", "High Wind"),
+    c("HURRICANE", "Hurricane (Typhoon)"),
+    c("ICE STORM", "Ice Storm"),
+    c("LAKE-EFFECT SNOW", "Lake-Effect Snow"),
+    c("LAKESHORE FLOOD", "Lakeshore Flood"),
+    c("LIGHTNING", "Lightning"),
+    c("MARINE HAIL", "Marine Hail"),
+    c("MARINE HIGH WIND", "Marine High Wind"),
+    c("MARINE STRONG WIND", "Marine Strong Wind"),
+    c("MARINE THUNDERSTORM WIND", "Marine Thunderstorm Wind"),
+    c("RIP CURRENT", "Rip Current"),
+    c("SEICHE", "Seiche"),
+    c("SLEET", "Sleet"),
+    c("STORM SURGE/TIDE", "Storm Surge/Tide"),
+    c("STRONG WIND", "Strong Wind"),
+    c("THUNDERSTORM WIND", "Thunderstorm Wind"),
+    c("TORNADO", "Tornado"),
+    c("TROPICAL DEPRESSION", "Tropical Depression"),
+    c("TROPICAL STORM", "Tropical Storm"),
+    c("TSUNAMI", "Tsunami"),
+    c("VOLCANIC ASHFALL", "Volcanic Ash"),
+    c("WATERSPOUT", "Waterspout"),
+    c("WILDFIRE", "Wildfire"),
+    c("WINTER STORM", "Winter Storm"),
+    c("WINTER WEATHER", "Winter Weather")
+))
+names(event_transform) <- c("EVTYPE", "event_type")
+dat <- merge(dat, event_transform, sort=F)
+```
 
-### Transforming property- and crop-damuage data
+
+### Transforming property- and crop-damage data
 
 Our property- and crop-damage data appear as fields `PROPDMG/CROPDMG` (numeric) and `PROPDMGEXP/CROPDMGEXP` (character). The former appear to be significands, and the latter exponents that we now explore.
 
@@ -298,9 +350,7 @@ We can now synthesize property- and crop-damage values.
 ```{r }
 dat[, property_damage := PROPDMG * as.numeric(property_damage_multiplier)]
 dat[, crop_damage := CROPDMG * as.numeric(crop_damage_multiplier)]
-str(dat)
 ```
-
 
 ### Tidying
 
@@ -310,7 +360,7 @@ Our final processing step removes unused fields.
 tidy <- dat %>%
     select(
         begin_datetime,
-        event_type = EVTYPE,
+        event_type,
         injuries = INJURIES,
         fatalities = FATALITIES,
         property_damage,
@@ -318,6 +368,15 @@ tidy <- dat %>%
     )
 str(tidy)
 ```
+
+These fields have the following meaning:
+
+- `event_type`: One of 48 permitted storm-event types listed in NWSI 10-1605 as of August 17, 2007. Type: factor.
+- `begin_datetime`: Date and time at start of event. Type: `POSIXct`.
+- `injuries`: Number of direct injuries caused by event. Type: integer.
+- `fatalities`: Number of direct fatalities caused by event. Type: integer.
+- `property_damage`: Dollar amount of direct property damage caused by event. Type: numeric.
+- `crop_damage`: Dollar amount of direct crop damage caused by event. Type: numeric.
 
 
 # Results
