@@ -263,6 +263,45 @@ dat <- dat[(ymd("2007-1-1", tz='Etc/GMT+0') <= begin_datetime),]
 ```
 
 
+### Transforming property- and crop-damage data
+
+Our property- and crop-damage data appear as fields `PROPDMG/CROPDMG` (numeric) and `PROPDMGEXP/CROPDMGEXP` (character). The former appear to be significands, and the latter exponents that we now explore.
+
+```{r }
+unique(dat[, PROPDMGEXP])
+unique(dat[, CROPDMGEXP])
+```
+
+The symbol '0' is used once with `PROPDMG` value also zero, so can be assumed to represent 1e0.
+
+```{r }
+dat[(PROPDMGEXP == '0') | (CROPDMGEXP == '0'),]
+```
+
+Use of symbols 'K' (thousands), 'M' (millions), and 'B' (billions) is consistent with NWSI 10-1605 documentation. Thus we apply the following transformation:
+
+```{r }
+damage_exponent_transform <- data.frame(rbind(
+    c("B", 1e9), # Billion
+    c("M", 1e6), # Million
+    c("K", 1e3), # Thousand
+    c("0", 1e0)  # One
+))
+names(damage_exponent_transform) <- c("PROPDMGEXP", 'property_damage_multiplier')
+dat <- merge(dat, damage_exponent_transform, sort=F)
+names(damage_exponent_transform) <- c("CROPDMGEXP", 'crop_damage_multiplier')
+dat <- merge(dat, damage_exponent_transform, sort=F)
+```
+
+We can now synthesize property- and crop-damage values.
+
+```{r }
+dat[, property_damage := PROPDMG * as.numeric(property_damage_multiplier)]
+dat[, crop_damage := CROPDMG * as.numeric(crop_damage_multiplier)]
+str(dat)
+```
+
+
 # Results
 
 ```{r , eval=F, include=F, results="hide"}

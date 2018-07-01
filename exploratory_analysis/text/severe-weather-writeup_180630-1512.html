@@ -349,6 +349,53 @@ sort(event_types)</code></pre>
 <p>Our usable data is thus limited to the period from 2007 through 2011. We extract this period for further processing.</p>
 <pre class="r"><code>dat &lt;- dat[(ymd(&quot;2007-1-1&quot;, tz='Etc/GMT+0') &lt;= begin_datetime),]</code></pre>
 </div>
+<div id="transforming-property--and-crop-damage-data" class="section level3">
+<h3>Transforming property- and crop-damage data</h3>
+<p>Our property- and crop-damage data appear as fields <code>PROPDMG/CROPDMG</code> (numeric) and <code>PROPDMGEXP/CROPDMGEXP</code> (character). The former appear to be significands, and the latter exponents that we now explore.</p>
+<pre class="r"><code>unique(dat[, PROPDMGEXP])</code></pre>
+<pre><code>## [1] &quot;K&quot; &quot;M&quot; &quot;B&quot; &quot;0&quot;</code></pre>
+<pre class="r"><code>unique(dat[, CROPDMGEXP])</code></pre>
+<pre><code>## [1] &quot;K&quot; &quot;M&quot; &quot;B&quot;</code></pre>
+<p>The symbol ‘0’ is used once with <code>PROPDMG</code> value also zero, so can be assumed to represent 1e0.</p>
+<pre class="r"><code>dat[(PROPDMGEXP == '0') | (CROPDMGEXP == '0'),]</code></pre>
+<pre><code>##    TIME_ZONE      EVTYPE          BGN_DATE    BGN_TIME PROPDMG PROPDMGEXP
+## 1:       EST FLASH FLOOD 7/27/2011 0:00:00 08:30:00 PM       0          0
+##    CROPDMG CROPDMGEXP FATALITIES INJURIES  timezone      begin_datetime
+## 1:       0          K          0        0 Etc/GMT+5 2011-07-27 08:30:00</code></pre>
+<p>Use of symbols ‘K’ (thousands), ‘M’ (millions), and ‘B’ (billions) is consistent with NWSI 10-1605 documentation. Thus we apply the following transformation:</p>
+<pre class="r"><code>damage_exponent_transform &lt;- data.frame(rbind(
+    c(&quot;B&quot;, 1e9), # Billion
+    c(&quot;M&quot;, 1e6), # Million
+    c(&quot;K&quot;, 1e3), # Thousand
+    c(&quot;0&quot;, 1e0)  # One
+))
+names(damage_exponent_transform) &lt;- c(&quot;PROPDMGEXP&quot;, 'property_damage_multiplier')
+dat &lt;- merge(dat, damage_exponent_transform, sort=F)
+names(damage_exponent_transform) &lt;- c(&quot;CROPDMGEXP&quot;, 'crop_damage_multiplier')
+dat &lt;- merge(dat, damage_exponent_transform, sort=F)</code></pre>
+<p>We can now synthesize property- and crop-damage values.</p>
+<pre class="r"><code>dat[, property_damage := PROPDMG * as.numeric(property_damage_multiplier)]
+dat[, crop_damage := CROPDMG * as.numeric(crop_damage_multiplier)]
+str(dat)</code></pre>
+<pre><code>## Classes 'data.table' and 'data.frame':   255108 obs. of  16 variables:
+##  $ CROPDMGEXP                : Factor w/ 3 levels &quot;B&quot;,&quot;K&quot;,&quot;M&quot;: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ PROPDMGEXP                : Factor w/ 4 levels &quot;0&quot;,&quot;B&quot;,&quot;K&quot;,&quot;M&quot;: 3 3 3 3 3 3 3 3 3 3 ...
+##  $ TIME_ZONE                 : Factor w/ 22 levels &quot;ADT&quot;,&quot;AKS&quot;,&quot;AST&quot;,..: 2 7 10 7 7 7 7 7 7 7 ...
+##  $ EVTYPE                    : chr  &quot;BLIZZARD&quot; &quot;THUNDERSTORM WIND&quot; &quot;THUNDERSTORM WIND&quot; &quot;WINTER STORM&quot; ...
+##  $ BGN_DATE                  : chr  &quot;12/31/2006 0:00:00&quot; &quot;12/31/2006 0:00:00&quot; &quot;12/31/2006 0:00:00&quot; &quot;12/31/2006 0:00:00&quot; ...
+##  $ BGN_TIME                  : chr  &quot;19:43:00 PM&quot; &quot;19:39:00 PM&quot; &quot;23:02:00 PM&quot; &quot;22:00:00 PM&quot; ...
+##  $ PROPDMG                   : num  0 3 0 0 10 0 0 0 0 0 ...
+##  $ CROPDMG                   : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ FATALITIES                : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ INJURIES                  : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ timezone                  : Factor w/ 12 levels &quot;Etc/GMT-10&quot;,&quot;Etc/GMT-11&quot;,..: 11 8 7 8 8 8 8 8 8 8 ...
+##  $ begin_datetime            : POSIXct, format: &quot;2006-12-31 19:43:00&quot; &quot;2006-12-31 19:39:00&quot; ...
+##  $ property_damage_multiplier: Factor w/ 4 levels &quot;1&quot;,&quot;1000&quot;,&quot;1e+06&quot;,..: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ crop_damage_multiplier    : Factor w/ 4 levels &quot;1&quot;,&quot;1000&quot;,&quot;1e+06&quot;,..: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ property_damage           : num  0 6 0 0 20 0 0 0 0 0 ...
+##  $ crop_damage               : num  0 0 0 0 0 0 0 0 0 0 ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+</div>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
