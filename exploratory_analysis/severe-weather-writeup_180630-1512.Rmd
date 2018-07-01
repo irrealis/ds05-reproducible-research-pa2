@@ -1,5 +1,5 @@
 ---
-title: "Health and Financial Impact of Severe-Weather Events Between 2005 and 2011"
+title: "Health and Financial Impact of Severe-Weather Events Between 2007 and 2011"
 ---
 
 ```{r , eval=F, include=F, results="hide"}
@@ -7,6 +7,16 @@ setwd("/media/kaben/Work/Repos/irrealis/ds05-reproducible-research-pa2/explorato
 ```
 
 # Synopsis
+
+In this analysis we initially intended to explore two questions:
+
+- Across the United States, which types of events are most harmful to population health?
+- Across the United States, which types of events have the greatest economic cost?
+
+We sought answers in NOAA Storm Database data from 1950 through 2011. Although this spans more than 60 years, only five years (2007 through 2011) of data were found suitable to comparative analysis, for reasons explained in the _Data Processing_ section. Thus we instead explored questions constrained to 2007 through 2011.
+
+We found that tornadoes were unambiguously most harmful in terms of injuries, and also harmful in terms of fatalities. The most harmful events to public health also included excessive heat, flash floods, lightning, rip currents, and thunderstorm winds. The most economically harmful events in terms of property and crop damage included flash floods, floods, frost and freeze, hail, storm surge and tides, and tornadoes.
+
 
 # Data Processing
 
@@ -192,7 +202,7 @@ We first extract the number of different event types used each year.
 
 ```{r }
 counts_by_year <- dat %>%
-    transmute(year = year(with_tz(begin_datetime, 'Etc/GMT+0')), EVTYPE) %>%
+    transmute(year = year(with_tz(begin_datetime, 'Etc/GMT')), EVTYPE) %>%
     unique() %>%
     count(year) %>%
     data.table()
@@ -224,14 +234,19 @@ updates <- counts_by_year %>%
     filter(year < 2012)
 ```
 
-We can now visualize the number of actively-used events each year, as well as additions of new types and retirements of old types.
+We can now visualize the number of distinct types of event recorded each year, as well as introductions of new types and retirements of old types.
 
 ```{r }
 long_updates <- updates %>% melt(id.var = c('year'), value.name = 'count')
-ggplot(long_updates, aes(x=year, y=count, color=variable)) + geom_line()
+ggplot(long_updates, aes(x=year, y=count, color=variable)) +
+    geom_line() +
+    labs(
+        title = "NOAA storm-event type usage from 1950 through 2011",
+        caption = "Storm-event types introduced, used, and retired year-by-year"
+    )
 ```
 
-Over 400 new event are added between about 1993 and 1995, the majority of which are retired within a few years. The number of actively-used events continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, exactly `r counts_by_year[2007 == year, n]` are used in each year.
+We see that over 400 new event are added between about 1993 and 1995, the majority of which are retired within a few years. The number continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, exactly `r counts_by_year[2007 == year, n]` are used in each year.
 
 ```{r }
 counts_by_year[2005 <= year,]
@@ -243,10 +258,9 @@ The number of distinct event types used between 2007 and 2011 is
 ```{r }
 event_types <- unique(dat[(ymd("2007-1-1", tz='Etc/GMT+0') <= begin_datetime), EVTYPE])
 sort(event_types)
-length(event_types)
 ```
 
-These types are exactly the permitted storm data events listed in table 1, section 2.1.1 of the [National Weather Service Instruction (NWSI) 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint).
+These types are exactly the permitted storm data events listed in table 1, section 2.1.1 of the [National Weather Service Instruction (NWSI) 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint). (Note: `LANDSLIDE` and "Debris Flow" are the same thing.)
 
 
 ### Extracting permitted events
@@ -319,8 +333,7 @@ dat <- merge(dat, event_transform, sort=F)
 Our property- and crop-damage data appear as fields `PROPDMG/CROPDMG` (numeric) and `PROPDMGEXP/CROPDMGEXP` (character). The former appear to be significands, and the latter exponents that we now explore.
 
 ```{r }
-unique(dat[, PROPDMGEXP])
-unique(dat[, CROPDMGEXP])
+union(unique(dat[, PROPDMGEXP]), unique(dat[, CROPDMGEXP]))
 ```
 
 The symbol '0' is used once with `PROPDMG` value also zero, so can be assumed to represent 1e0.
@@ -347,8 +360,8 @@ dat <- merge(dat, damage_exponent_transform, sort=F)
 We can now synthesize property- and crop-damage values.
 
 ```{r }
-dat[, property_damage := PROPDMG * as.numeric(property_damage_multiplier)]
-dat[, crop_damage := CROPDMG * as.numeric(crop_damage_multiplier)]
+dat[, property_damage := PROPDMG * as.numeric(as.character(property_damage_multiplier))]
+dat[, crop_damage := CROPDMG * as.numeric(as.character(crop_damage_multiplier))]
 ```
 
 
@@ -377,9 +390,9 @@ The remaining tidy fields have the following meanings:
 - `property_damage`: The dollar amount of direct property damage caused by the event. Type: numeric.
 - `crop_damage`: The dollar amount of direct crop damage caused by event. Type: numeric.
 
-We verify that no integer or numeric data are missing.
 
-```{r }
+```{r , eval=F, include=F, results="hide"}
+# Verify that no integer or numeric data are missing.
 with(tdy, sum(is.na(c(injuries, fatalities, property_damage, crop_damage))))
 ```
 
@@ -390,9 +403,9 @@ fwrite(tdy, tdy_pth)
 ```
 
 
-### Quality assessment: consequences of limiting data to a five-year span
+# Quality assessment
 
-Our usable data cannot answer our original questions. We develop an explanation below, first discussing problems preventing comparative analysis, their solutions, and problems caused by those solutions. The latter prevent answering our original questions. In their place we will pose limited versions our data _can_ answer.
+We believe that our usable data cannot answer the original questions. We develop an explanation below, first discussing problems preventing comparative analysis, their solutions, and problems caused by those solutions. The latter prevent answering our original questions. In their place we will pose limited versions our data _can_ answer.
 
 In the original data, the number of distinct event types ranges from one to over 400 for any given year. This has at least three causes:
 
@@ -402,15 +415,276 @@ In the original data, the number of distinct event types ranges from one to over
 
 Different populations and methods at different times result in incomparable data, prevent comparative analysis. Different spellings require extensive by-hand curation during processing. We solve these problems by constraining our dataset to the 48 permitted events listed in NWSI 10-1605, which permits comparative analysis.
 
-But in doing so we discard over 65 years of data. The remainder span five years, or less than ten percent. Moreover, four global El Niño events lasting over five years occurred from 1950 to 2011, with several strong interspersed La Niña events associated with distinctly different weather. Weather during El Niño and La Niña are not comparable, and the period spanned by our remaining data coincides with predominantly La Niña events. Consequently, the conclusions in this analysis cannot generalize to certain other, or larger, time spans, so cannot answer with generality the posed questions.
+But in doing so we discard over 65 years of data. The remainder span five years, or less than ten percent. Moreover, four global El Niño events lasting over five years occurred from 1950 to 2011, with several strong interspersed La Niña events associated with distinctly different weather. We suspect that weather during El Niño and La Niña are not comparable, Since the period spanned by our remaining data coincides with predominantly La Niña events, we suspect that the conclusions in this analysis cannot generalize to certain other, or larger, time spans, so cannot answer with generality the posed questions.
 
-We can instead answer the more limited questions:
+Based on this assessment we instead seek answers to the following:
 
 - Across the United States _from 2007 to 2011_, which types of events are most harmful to population health?
 - Across the United States _from 2007 to 2011_, which types of events have the greatest economic cost?
 
 
 # Results
+
+We will first explore average health and economic consequences of different types of storm events, then consider consequences year-by-year, exploring variation from averages consequences.
+
+
+### Average consequences of storm events
+
+We begin by counting and summing each type of consequence of each storm event type.
+
+```{r }
+counts_by_type <- count(tdy, event_type) %>% data.table()
+sums_by_type <- data.table(with(tdy,
+    aggregate(
+        cbind(injuries, fatalities, property_damage, crop_damage),
+        by = list(event_type = event_type),
+        sum
+    ))
+)
+counts_and_sums_by_type <- merge(counts_by_type, sums_by_type, sort=F)
+```
+
+```{r , eval=F, include=F, results="hide"}
+# Sanity check that sums are correct.
+(
+    counts_and_sums_by_type %>%
+        select(
+            -event_type,
+            total_events = n,
+            total_injuries = injuries,
+            total_fatalities = fatalities,
+            total_property_damage = property_damage,
+            total_crop_damage = crop_damage
+        ) %>%
+        summarize_all(sum)
+) == with(dat, cbind(
+    nrow(dat),
+    sum(INJURIES),
+    sum(FATALITIES),
+    sum(property_damage),
+    sum(crop_damage)
+))
+```
+
+We define a convenience function to find the top _k_ rows by sorting on a column:
+
+```{r }
+k <- 5
+
+top_k_by <- function(data, k, sort_column, ...) {
+    sort_column <- rlang::enexpr(sort_column)
+    extra_columns <- rlang::quos(...)
+    data %>%
+        select(!!!extra_columns, !!sort_column) %>%
+        do(arrange(., desc(!!sort_column)) %>% head(., k))
+}
+```
+
+Note above that _k_ is "`r k`". We now find the top-`r k` worst weather events in terms of each type of consequence (plus "frequency").
+
+```{r }
+worst_events_by_consequence <- counts_and_sums_by_type %>% {
+    list(
+        frequency = top_k_by(., k, n, event_type),
+        injuries = top_k_by(., k, injuries, event_type),
+        fatalities = top_k_by(., k, fatalities, event_type),
+        property_damage = top_k_by(., k, property_damage, event_type),
+        crop_damage = top_k_by(., k, crop_damage, event_type)
+    )
+}
+worst_events_by_consequence
+```
+
+We collect and sort the worst event types in terms of public health, and again of economic damage.
+
+```{r }
+worst_events_for_health <- sort(with(worst_events_by_consequence,
+    injuries$event_type %>%
+    union(fatalities$event_type)
+))
+worst_events_for_economy <- sort(with(worst_events_by_consequence,
+    property_damage$event_type %>%
+    union(crop_damage$event_type)
+))
+worst_average_events <- sort(union(worst_events_for_health, worst_events_for_economy))
+```
+
+On average from 2007 to 2011, the worst event types in terms of public health include `r worst_events_for_health` (`worst_events_for_health`), and in terms of economic damage include `r worst_events_for_economy` (`worst_events_for_economy`).
+
+All together we have `r length(worst_average_events)` worst event types:
+
+```{r }
+worst_average_events
+```
+
+
+### Year-by-year consequences of storm events
+
+In order to compare years with different overall weather severity, we will normalize and compare annual proportional consequences. We begin by counting and summing each type of consequence of each storm event type for each year, and then convert to proportions.
+
+```{r }
+counts_by_year_and_type <- count(tdy, year = year(with_tz(begin_datetime, 'Etc/GMT')), event_type)
+sums_by_year_and_type <- data.table(with(tdy,
+    aggregate(
+        cbind(injuries, fatalities, property_damage, crop_damage),
+        by = list(year = year(with_tz(begin_datetime, 'Etc/GMT')), event_type = event_type),
+        sum
+    ))
+)
+counts_and_sums_by_year_and_type <- merge(counts_by_year_and_type, sums_by_year_and_type, sort=F )
+counts_and_sums_by_year <- with(
+    counts_and_sums_by_year_and_type,
+    aggregate(
+        cbind(n, injuries, fatalities, property_damage, crop_damage),
+        by = list(year = year),
+        sum
+    )
+)
+proportions_by_year_and_type <- counts_and_sums_by_year_and_type %>%
+    merge(counts_and_sums_by_year, by=c("year"), suffixes=c("", "_annual")) %>%
+    transmute(
+        year = year,
+        event_type = event_type,
+        frequency = n/n_annual,
+        injuries = injuries/injuries_annual,
+        fatalities = fatalities/fatalities_annual,
+        property_damage = property_damage/property_damage_annual,
+        crop_damage = crop_damage/crop_damage_annual
+    )
+```
+
+```{r , eval=F, include=F, results="hide"}
+# Sanity check that the totals are correct:
+(
+    counts_and_sums_by_year_and_type %>%
+    select(-year, -event_type) %>%
+    summarize_all(sum)
+) == with(dat, cbind(
+    nrow(dat),
+    sum(INJURIES),
+    sum(FATALITIES),
+    sum(property_damage),
+    sum(crop_damage)
+))
+```
+
+We define another convenience function to find the top _k_ rows by sorting on a column, grouping by another column:
+
+```{r }
+k <- 2
+
+group_top_k_by <- function(data, k, sort_column, by_columns, ...) {
+    sort_column <- rlang::enexpr(sort_column)
+    by_columns <- rlang::enexpr(by_columns)
+    if(typeof(by_columns) == "language"){
+        by_columns <- rlang::lang_args(by_columns)
+    }
+    extra_columns <- rlang::quos(...)
+    data %>%
+        select(!!!by_columns, !!!extra_columns, !!sort_column) %>%
+        group_by(!!!by_columns) %>%
+        do(arrange(., desc(!!sort_column)) %>% head(., k))
+}
+```
+
+Note that _k_ is now "`r k`". We find the top-`r k` worst events in terms of each consequence type, grouped by year.
+
+```{r }
+k <- 2
+worst_events_by_year <- proportions_by_year_and_type %>% {
+    list(
+        frequency = group_top_k_by(., k, frequency, year, event_type),
+        injuries = group_top_k_by(., k, injuries, year, event_type),
+        fatalities = group_top_k_by(., k, fatalities, year, event_type),
+        property_damage = group_top_k_by(., k, property_damage, year, event_type),
+        crop_damage = group_top_k_by(., k, crop_damage, year, event_type)
+    )
+}
+worst_year_by_year_for_health <- sort(with(worst_events_by_year,
+    injuries$event_type %>%
+        union(fatalities$event_type)
+))
+worst_year_by_year_for_economy <- sort(with(worst_events_by_year,
+    property_damage$event_type %>%
+        union(crop_damage$event_type)
+))
+worst_year_by_year_events <- sort(union(
+    worst_year_by_year_for_health,
+    worst_year_by_year_for_economy
+))
+worst_events_by_year
+```
+
+The worst year-by-year event types in terms of health include `r worst_year_by_year_for_health`, and in terms of economic damage include `r worst_year_by_year_for_economy`. All together we have `r length(worst_year_by_year_events)` event types listed year-by-year:
+
+```{r }
+worst_year_by_year_events
+```
+
+These are similar by not quite the same as the average worst event types. These appear in both lists:
+
+```{r }
+common_events <- intersect(worst_average_events, worst_year_by_year_events)
+common_events
+```
+
+Here are the differences. In the average list only:
+
+```{r }
+only_in_average_events <- setdiff(worst_average_events, worst_year_by_year_events)
+only_in_average_events
+```
+
+In the year-by-year list only:
+
+```{r }
+only_in_year_by_year_events <- setdiff(worst_year_by_year_events, worst_average_events)
+only_in_year_by_year_events
+```
+
+
+Finally, we plot how consequences of each event type vary year-by-year. To display this using a plot panel with _ggplot2_, we'll need to melt our proportional data, then partition it into consequence types. The result is interesting: only in the case of injuries is it clear that tornadoes are the worst type of event. There otherwise appears to be considerable year-by-year variation in worst event types.
+
+```{r }
+long_proportions_by_year_and_type <- melt(
+    proportions_by_year_and_type,
+    id.var = c('year', 'event_type'),
+    value.name = "proportion"
+)
+
+most_harmful_by_year_and_type <- long_proportions_by_year_and_type %>% filter((
+    (event_type %in% worst_events_by_year$injuries$event_type)
+    &
+    (variable == 'injuries')
+)|(
+    (event_type %in% worst_events_by_year$fatalities$event_type)
+    &
+    (variable == 'fatalities')
+)|(
+    (event_type %in% worst_events_by_year$property_damage$event_type)
+    &
+    (variable == 'property_damage')
+)|(
+    (event_type %in% worst_events_by_year$crop_damage$event_type)
+    &
+    (variable == 'crop_damage')
+))
+
+ggplot(
+    most_harmful_by_year_and_type,
+    aes(x=year, y=proportion, color=event_type)
+) +
+    geom_line() +
+    facet_grid(variable ~ .) +
+    labs(
+        title = "Harm by U.S. storm events from 2007 through 2011",
+        caption =
+            "Year-by-year worst storm-event typess and relative harm in terms of
+            injuries, fatalities, property-damage value, and crop-damage value"
+    )
+```
+
+
 
 ```{r , eval=F, include=F, results="hide"}
 library(rmarkdown)
