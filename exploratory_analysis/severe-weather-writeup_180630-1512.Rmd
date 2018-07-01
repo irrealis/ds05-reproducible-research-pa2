@@ -89,7 +89,7 @@ str(dat)
 
 ### Initial assessment of dataset quality
 
-From [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 permitted storm data event types (see sec. 2.1), but find `r length(unique(dat$EVTYPE))` distinct types in our data.
+From section 2.1 of the [National Weather Service (NWS) storm data documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 permitted storm data event types, but find `r length(unique(dat$EVTYPE))` distinct types in our data.
 
 ```{r }
 length(unique(dat$EVTYPE))
@@ -232,6 +232,24 @@ We can now visualize the number of actively-used events each year, as well as ad
 long_updates <- updates %>% melt(id.var = c('year'), value.name = 'count')
 ggplot(long_updates, aes(x=year, y=count, color=variable)) + geom_line()
 ```
+
+Over 400 new event are added between about 1993 and 1995, the majority of which are retired within about one year. The number of actively-used events continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, exactly `r counts_by_year[2007 == year, n]` are used each year.
+
+```{r }
+counts_by_year[2005 <= year,]
+```
+
+The number of distinct event types used between 2007 and 2011 is
+`r length(unique(dat[(ymd("2007-1-1", tz='Etc/GMT+0') <= begin_datetime), EVTYPE]))`.
+
+```{r }
+event_types <- unique(dat[(ymd("2007-1-1", tz='Etc/GMT+0') <= begin_datetime), EVTYPE])
+sort(event_types)
+length(event_types)
+```
+
+These are the permitted storm data events listed in table 1, section 2.1.1 of the
+[National Weather Service Instruction 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint).
 
 
 # Results
