@@ -84,7 +84,7 @@ From section 2.1 of the [National Weather Service (NWS) storm data documentation
 length(unique(dat$EVTYPE))
 ```
 
-Reasons include spelling variants and event conflations. For example, `TSTM WIND`, `THUNDERSTORM WINDS`, `THUNDERSTORM WIND`, `THUNDERSTORM WINS` all appear to represent "Thunderstorm Wind", while `ICE STORM/FLASH FLOOD` conflates two distinct event types. Spelling variants require curation prior to processing. Event conflations suggest different recording methods were used prior to 2007, which may hinder comparative analysis.
+Reasons include spelling variants and event conflations. For example, `TSTM WIND`, `THUNDERSTORM WINDS`, `THUNDERSTORM WIND`, `THUNDERSTORM WINS` all appear to represent "Thunderstorm Wind", while `ICE STORM/FLASH FLOOD` conflates two distinct event types. Spelling variants require curation prior to processing. Event conflations indicate that different recording methods were used prior to 2007, when such events should be recorded separately. Differences between recording methods may hinder comparative analysis.
 
 ```{r }
 unique(dat$EVTYPE)[1:20]

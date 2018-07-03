@@ -167,30 +167,10 @@ limited_min_year = 2007</code></pre>
 <h3>Loading data</h3>
 <pre class="r"><code># Load libraries.
 library(data.table)
-library(dplyr)</code></pre>
-<pre><code>## 
-## Attaching package: 'dplyr'</code></pre>
-<pre><code>## The following objects are masked from 'package:data.table':
-## 
-##     between, first, last</code></pre>
-<pre><code>## The following objects are masked from 'package:stats':
-## 
-##     filter, lag</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union</code></pre>
-<pre class="r"><code>library(ggplot2)
-library(lubridate)</code></pre>
-<pre><code>## 
-## Attaching package: 'lubridate'</code></pre>
-<pre><code>## The following objects are masked from 'package:data.table':
-## 
-##     hour, isoweek, mday, minute, month, quarter, second, wday,
-##     week, yday, year</code></pre>
-<pre><code>## The following object is masked from 'package:base':
-## 
-##     date</code></pre>
-<pre class="r"><code>library(readr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(readr)
 
 # Create any missing directories.
 for(d in c(dat_dir, raw_dir, int_dir, tdy_dir)) if(!dir.exists(d)) dir.create(d)
@@ -212,7 +192,7 @@ dat &lt;- dat[, .(EVTYPE, BGN_DATE, BGN_TIME, TIME_ZONE, PROPDMG, PROPDMGEXP, CR
 <p>From section 2.1 of the <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">National Weather Service (NWS) storm data documentation</a> we expect 48 storm data event types, but find 985.</p>
 <pre class="r"><code>length(unique(dat$EVTYPE))</code></pre>
 <pre><code>## [1] 985</code></pre>
-<p>Reasons include spelling variants and event conflations. For example, <code>TSTM WIND</code>, <code>THUNDERSTORM WINDS</code>, <code>THUNDERSTORM WIND</code>, <code>THUNDERSTORM WINS</code> all appear to represent “Thunderstorm Wind”, while <code>ICE STORM/FLASH FLOOD</code> conflates two distinct event types. Spelling variants require curation prior to processing. Event conflations suggest different recording methods were used prior to 2007, which may hinder comparative analysis.</p>
+<p>Reasons include spelling variants and event conflations. For example, <code>TSTM WIND</code>, <code>THUNDERSTORM WINDS</code>, <code>THUNDERSTORM WIND</code>, <code>THUNDERSTORM WINS</code> all appear to represent “Thunderstorm Wind”, while <code>ICE STORM/FLASH FLOOD</code> conflates two distinct event types. Spelling variants require curation prior to processing. Event conflations indicate that different recording methods were used prior to 2007, when such events should be recorded separately. Differences between recording methods may hinder comparative analysis.</p>
 <pre class="r"><code>unique(dat$EVTYPE)[1:20]</code></pre>
 <pre><code>##  [1] &quot;TORNADO&quot;                   &quot;TSTM WIND&quot;                
 ##  [3] &quot;HAIL&quot;                      &quot;FREEZING RAIN&quot;            

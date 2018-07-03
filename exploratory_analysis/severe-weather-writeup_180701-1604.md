@@ -56,55 +56,8 @@ limited_min_year = 2007
 # Load libraries.
 library(data.table)
 library(dplyr)
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-```
-
-```
-## The following objects are masked from 'package:data.table':
-## 
-##     between, first, last
-```
-
-```
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 library(ggplot2)
 library(lubridate)
-```
-
-```
-## 
-## Attaching package: 'lubridate'
-```
-
-```
-## The following objects are masked from 'package:data.table':
-## 
-##     hour, isoweek, mday, minute, month, quarter, second, wday,
-##     week, yday, year
-```
-
-```
-## The following object is masked from 'package:base':
-## 
-##     date
-```
-
-```r
 library(readr)
 
 # Create any missing directories.
@@ -139,7 +92,7 @@ length(unique(dat$EVTYPE))
 ## [1] 985
 ```
 
-Reasons include spelling variants and event conflations. For example, `TSTM WIND`, `THUNDERSTORM WINDS`, `THUNDERSTORM WIND`, `THUNDERSTORM WINS` all appear to represent "Thunderstorm Wind", while `ICE STORM/FLASH FLOOD` conflates two distinct event types. Spelling variants require curation prior to processing. Event conflations suggest different recording methods were used prior to 2007, which may hinder comparative analysis.
+Reasons include spelling variants and event conflations. For example, `TSTM WIND`, `THUNDERSTORM WINDS`, `THUNDERSTORM WIND`, `THUNDERSTORM WINS` all appear to represent "Thunderstorm Wind", while `ICE STORM/FLASH FLOOD` conflates two distinct event types. Spelling variants require curation prior to processing. Event conflations indicate that different recording methods were used prior to 2007, when such events should be recorded separately. Differences between recording methods may hinder comparative analysis.
 
 
 ```r
