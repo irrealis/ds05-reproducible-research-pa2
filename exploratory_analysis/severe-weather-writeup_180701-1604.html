@@ -136,7 +136,7 @@ $(document).ready(function () {
 <li>Across the United States, which types of events have the greatest economic cost?</li>
 </ul>
 <p>We sought answers in NOAA Storm Database data from 1950 through 2011. Although this spans over 60 years, only five years (2007 through 2011) seemed suitable to comparative analysis, for reasons explained in the <em>Data Processing</em> section. Thus we narrowed the questions’ scope to 2007 through 2011.</p>
-<p>We analyzed the top-5 average and top-2 year-by-year worst events in terms of injuries, fatalities, and damage to property and crops. We found that tornadoes were unambiguously most harmful in terms of injuries, and also harmful in terms of fatalities. The most harmful events to public health also included excessive heat, flash floods, lightning, rip currents, and thunderstorm winds. The most economically harmful events in terms of property and crop damage included tornadoes, flash floods, frost and freeze, hail, and storm surge and tides.</p>
+<p>We analyzed the top-5 average and top-2 year-by-year worst events during this period in terms of injuries, fatalities, and damage to property and crops. We found that tornadoes were unambiguously most harmful in terms of injuries, and also harmful in terms of fatalities. The most harmful events to public health also included excessive heat, flash floods, lightning, rip currents, and thunderstorm winds. The most economically harmful events in terms of property and crop damage included tornadoes, flash floods, frost and freeze, hail, and storm surge and tides.</p>
 </div>
 <div id="data-processing" class="section level1">
 <h1>Data Processing</h1>
@@ -167,10 +167,30 @@ limited_min_year = 2007</code></pre>
 <h3>Loading data</h3>
 <pre class="r"><code># Load libraries.
 library(data.table)
-library(dplyr)
-library(ggplot2)
-library(lubridate)
-library(readr)
+library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: 'dplyr'</code></pre>
+<pre><code>## The following objects are masked from 'package:data.table':
+## 
+##     between, first, last</code></pre>
+<pre><code>## The following objects are masked from 'package:stats':
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>library(ggplot2)
+library(lubridate)</code></pre>
+<pre><code>## 
+## Attaching package: 'lubridate'</code></pre>
+<pre><code>## The following objects are masked from 'package:data.table':
+## 
+##     hour, isoweek, mday, minute, month, quarter, second, wday,
+##     week, yday, year</code></pre>
+<pre><code>## The following object is masked from 'package:base':
+## 
+##     date</code></pre>
+<pre class="r"><code>library(readr)
 
 # Create any missing directories.
 for(d in c(dat_dir, raw_dir, int_dir, tdy_dir)) if(!dir.exists(d)) dir.create(d)
@@ -405,7 +425,7 @@ fwrite(tdy, tdy_pth)</code></pre>
 <p>We will first explore average health and economic consequences of different types of storm events, then consider consequences year-by-year, exploring variation from averages consequences.</p>
 <div id="overall-consequences-of-storm-events" class="section level3">
 <h3>Overall consequences of storm events</h3>
-<p>Tornadoes appear to be by far the worst of storm events in terms of injuries (9,608), fatalities (863), and property damage ($1.5e+10). Floods appear to be worst in terms of crop damage ($2.9e+09). Second rank are floods in property damage ($1.4e+10), frost and freezes in crop damage ($9.3e+08), thunderstorm winds for injuries (1,374), and flash floods for fatalities (276).</p>
+<p>From 2007 through 2011, tornadoes appear to be by far the worst of storm events in terms of injuries (9,608), fatalities (863), and property damage ($1.5e+10). Floods appear to be worst in terms of crop damage ($2.9e+09). Second rank are floods in property damage ($1.4e+10), frost and freezes in crop damage ($9.3e+08), thunderstorm winds for injuries (1,374), and flash floods for fatalities (276).</p>
 <pre class="r"><code>counts_by_type &lt;- tdy[
     ,
     .(n = .N),
@@ -580,10 +600,10 @@ ggplot(
 </div>
 <div id="year-by-year-consequences-of-storm-events" class="section level3">
 <h3>Year-by-year consequences of storm events</h3>
-<p>In this section we compare proportions of year-by-year total injuries, fatalities, property damages, and crop damages.</p>
-<p>We find that tornadoes consistently cause the highest proportions of injuries, with rates ranging from 30% to 80% of totals. They also tend to cause the highest proportions of injuries with rates as high as 59%, although rip currents during 2009 and flash floods during 2010 caused higher proportions at 12% and 15%, respectively.</p>
+<p>In this section we compare proportions of year-by-year total injuries, fatalities, property damages, and crop damages from 2007 through 2011.</p>
+<p>We find that tornadoes consistently caused the highest proportions of injuries, with rates ranging from 30% to 80% of totals. They also tended to cause the highest proportions of injuries with rates as high as 59%, although rip currents during 2009 and flash floods during 2010 caused higher proportions at 12% and 15%, respectively.</p>
 <p>The causes of proportionally highest property damages are more ambiguous, with tornadoes worst in 2007 (24%) and 2011 (49%), storm surges in 2008 (30%), and hail in 2009 (28%) and 2010 (37%). In terms of property damage, floods were worst in four out of five years, with proportions of total damage ranging from 23% to 62%. Hail was worst in 2009 at 67%.</p>
-<p>Tornadoes seem to be unambiguously most harmful to public health in terms of both injuries and fatalities. In terms of fatalities and damage to property and crops, the plots below reveal considerable variation in worst events. In order to visualize this variation over time, the data were normalized to allow comparison of different years. The impacts of weather events are shown as proportions of total harm. The plot of injuries seems to show the worst events, in this case tornadoes, most clearly. Ambiguity seems to increase in the plots of fatalities, property damage, and crop damage.</p>
+<p>Tornadoes seemed to be unambiguously most harmful to public health in terms of both injuries and fatalities. In terms of fatalities and damage to property and crops, the plots below reveal considerable variation in worst events. In order to visualize this variation over time, the data were normalized to allow comparison of different years. The impacts of weather events are shown as proportions of total harm. The plot of injuries seems to show the worst events, in this case tornadoes, most clearly. Ambiguity seems to increase in the plots of fatalities, property damage, and crop damage.</p>
 <p>This strengthens our suspicion (see <em>Quality assessment</em>) that the overall conclusions of this analysis may not generalize well.</p>
 <pre class="r"><code>counts_by_year_and_type &lt;- tdy[
     ,
