@@ -21,7 +21,7 @@ We analyzed the top-5 average and top-2 year-by-year worst events during this pe
 
 # Data Processing
 
-Data are loaded from cache if available, otherwise decompressed from an archive if available, and otherwise downloaded (see _Loading data_). Data not used in this analysis is removed in _Trimming unused data_. We then encounter and explore data-quality issues in _Exploring `EVTYPE`_. To troubleshoot these issues, a time series is constructed in _Construction of time series_ and visualized in _Visualizing `EVTYPE` evolution_ where causes are identified. They are addressed in _Subsetting data with correct `EVTYPE`_ by extracting a high-quality subset of data suitable for comparative analysis. Property and crop damages are computed in dollars in _Transforming economic data_. The data are tidied and saved in _Tidying_.
+Data are loaded from cache if available, otherwise decompressed from an archive if available, and otherwise downloaded (see _Loading data_). Data not required for this analysis are removed in _Trimming unused data_. We then encounter and explore data-quality issues in _Exploring `EVTYPE`_. To troubleshoot these issues, a time series is constructed in _Construction of time series_ and visualized in _Visualizing `EVTYPE` evolution_ where causes are identified. They are addressed in _Subsetting data with correct `EVTYPE`_ by extracting a high-quality subset of data suitable for comparative analysis. Property and crop damages are computed in dollars in _Transforming economic data_. The data are tidied and saved in _Tidying_.
 
 
 ### Setting analysis parameters
@@ -56,55 +56,8 @@ limited_min_year = 2007
 # Load libraries.
 library(data.table)
 library(dplyr)
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-```
-
-```
-## The following objects are masked from 'package:data.table':
-## 
-##     between, first, last
-```
-
-```
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 library(ggplot2)
 library(lubridate)
-```
-
-```
-## 
-## Attaching package: 'lubridate'
-```
-
-```
-## The following objects are masked from 'package:data.table':
-## 
-##     hour, isoweek, mday, minute, month, quarter, second, wday,
-##     week, yday, year
-```
-
-```
-## The following object is masked from 'package:base':
-## 
-##     date
-```
-
-```r
 library(readr)
 
 # Create any missing directories.
@@ -113,39 +66,22 @@ for(d in c(dat_dir, raw_dir, int_dir, tdy_dir)) if(!dir.exists(d)) dir.create(d)
 # Download and read StormData.csv.bz2.
 if(!file.exists(cch_pth)){
     if(!file.exists(dat_pth)) download.file(dat_url, dat_pth)
-    fwrite(read.csv(dat_pth), cch_pth)
+    write.csv(read.csv(dat_pth), cch_pth)
 }
 dat <- fread(cch_pth)
 ```
 
 ### Trimming unused data
 
-The `STATE` field has 72 encodings. We remove rows encoding locations outside of the 50 United States, as well as columns that will not be used in this analysis.
-
 
 ```r
-# Exclude data from territories outside the United States.
-unique(dat$STATE)
-```
-
-```
-##  [1] "AL" "AZ" "AR" "CA" "CO" "CT" "DE" "DC" "FL" "GA" "HI" "ID" "IL" "IN"
-## [15] "IA" "KS" "KY" "LA" "ME" "MD" "MA" "MI" "MN" "MS" "MO" "MT" "NE" "NV"
-## [29] "NH" "NJ" "NM" "NY" "NC" "ND" "OH" "OK" "OR" "PA" "RI" "SC" "SD" "TN"
-## [43] "TX" "UT" "VT" "VA" "WA" "WV" "WI" "WY" "PR" "AK" "ST" "AS" "GU" "MH"
-## [57] "VI" "AM" "LC" "PH" "GM" "PZ" "AN" "LH" "LM" "LE" "LS" "SL" "LO" "PM"
-## [71] "PK" "XX"
-```
-
-```r
-dat <- dat[STATE %in% state.abb]
 # Select columns used in processing.
 dat <- dat[, .(EVTYPE, BGN_DATE, BGN_TIME, TIME_ZONE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, FATALITIES, INJURIES)]
 ```
 
 ### Exploring `EVTYPE`
 
-From section 2.1 of the [National Weather Service (NWS) storm data documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 storm data event types, but find 945.
+From section 2.1 of the [National Weather Service (NWS) storm data documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) we expect 48 storm data event types, but find 985.
 
 
 ```r
@@ -153,7 +89,7 @@ length(unique(dat$EVTYPE))
 ```
 
 ```
-## [1] 945
+## [1] 985
 ```
 
 Reasons include spelling variants and event conflations. For example, `TSTM WIND`, `THUNDERSTORM WINDS`, `THUNDERSTORM WIND`, `THUNDERSTORM WINS` all appear to represent "Thunderstorm Wind", while `ICE STORM/FLASH FLOOD` conflates two distinct event types. Spelling variants require curation prior to processing. Event conflations suggest different recording methods at different times, which may hinder comparative analysis.
@@ -187,7 +123,7 @@ unique(dat[grepl("195[[:digit:]]", BGN_DATE, ignore.case = F), EVTYPE])
 ## [1] "TORNADO"   "TSTM WIND" "HAIL"
 ```
 
-The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. But it also states that 48 event types are used for 1996 to present, which disagrees with our 945 distinct types. On the other hand, this suggests that constructing a time series may help to identify and extract a dataset suitable for our analysis.
+The [National Oceanic and Atmospheric Administration (NOAA) Storm Events Database page](https://www.ncdc.noaa.gov/stormevents/details.jsp) states that only tornado events are represented for 1950 through 1954, and tornado, thunderstorm wind, and hail for 1955 through 1995, which seems to agree with our findings. But it also states that 48 event types are used for 1996 to present, which disagrees with our 985 distinct types. On the other hand, this suggests that constructing a time series may help to identify and extract a dataset suitable for our analysis.
 
 
 ### Construction of time series
@@ -238,10 +174,10 @@ The numbers of event types in use each year are visualized, as well as additions
 
 
 
-We see that over 400 new event are added between about 1993 and 1995, the majority of which are retired within a few years. The number continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, exactly 40 are used in each year.
+We see that over 400 new event are added between about 1993 and 1995, the majority of which are retired within a few years. The number continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, up to 46 are used in each year.
 
 The number of distinct event types used between 2007 and 2011 is
-42. They are exactly the permitted storm data events listed in table 1, section 2.1.1 of the [National Weather Service Instruction (NWSI) 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint). (Note: `LANDSLIDE` and "Debris Flow" are the same thing.)
+48. They are exactly the permitted storm data events listed in table 1, section 2.1.1 of the [National Weather Service Instruction (NWSI) 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint). (Note: `LANDSLIDE` and "Debris Flow" are the same thing.)
 
 
 ```r
@@ -301,13 +237,13 @@ counts_by_year[2005 <= year,]
 
 ```
 ##    year event_types
-## 1: 2005          42
-## 2: 2006          43
-## 3: 2007          40
-## 4: 2008          40
-## 5: 2009          39
-## 6: 2010          40
-## 7: 2011          41
+## 1: 2005          46
+## 2: 2006          50
+## 3: 2007          46
+## 4: 2008          46
+## 5: 2009          46
+## 6: 2010          46
+## 7: 2011          46
 ```
 
 ```r
@@ -315,27 +251,30 @@ distinct_types_07_to_11
 ```
 
 ```
-##  [1] "BLIZZARD"                "THUNDERSTORM WIND"      
-##  [3] "WINTER STORM"            "TORNADO"                
-##  [5] "HAIL"                    "FLASH FLOOD"            
-##  [7] "LIGHTNING"               "FUNNEL CLOUD"           
-##  [9] "HEAVY SNOW"              "STRONG WIND"            
-## [11] "DROUGHT"                 "FROST/FREEZE"           
-## [13] "RIP CURRENT"             "HEAVY RAIN"             
-## [15] "HEAT"                    "DUST DEVIL"             
-## [17] "HIGH SURF"               "EXTREME COLD/WIND CHILL"
-## [19] "HIGH WIND"               "FLOOD"                  
-## [21] "WINTER WEATHER"          "ASTRONOMICAL LOW TIDE"  
-## [23] "LANDSLIDE"               "COASTAL FLOOD"          
-## [25] "ICE STORM"               "STORM SURGE/TIDE"       
-## [27] "COLD/WIND CHILL"         "DUST STORM"             
-## [29] "WILDFIRE"                "EXCESSIVE HEAT"         
-## [31] "DENSE FOG"               "DENSE SMOKE"            
-## [33] "AVALANCHE"               "TROPICAL STORM"         
-## [35] "TROPICAL DEPRESSION"     "HURRICANE"              
-## [37] "LAKE-EFFECT SNOW"        "SLEET"                  
-## [39] "FREEZING FOG"            "LAKESHORE FLOOD"        
-## [41] "SEICHE"                  "TSUNAMI"
+##  [1] "BLIZZARD"                 "THUNDERSTORM WIND"       
+##  [3] "WINTER STORM"             "TORNADO"                 
+##  [5] "HAIL"                     "FLASH FLOOD"             
+##  [7] "LIGHTNING"                "FUNNEL CLOUD"            
+##  [9] "HEAVY SNOW"               "STRONG WIND"             
+## [11] "DROUGHT"                  "FROST/FREEZE"            
+## [13] "RIP CURRENT"              "HEAVY RAIN"              
+## [15] "HEAT"                     "DUST DEVIL"              
+## [17] "HIGH SURF"                "EXTREME COLD/WIND CHILL" 
+## [19] "HIGH WIND"                "FLOOD"                   
+## [21] "WINTER WEATHER"           "ASTRONOMICAL LOW TIDE"   
+## [23] "LANDSLIDE"                "COASTAL FLOOD"           
+## [25] "ICE STORM"                "STORM SURGE/TIDE"        
+## [27] "COLD/WIND CHILL"          "DUST STORM"              
+## [29] "WILDFIRE"                 "EXCESSIVE HEAT"          
+## [31] "DENSE FOG"                "DENSE SMOKE"             
+## [33] "AVALANCHE"                "TROPICAL STORM"          
+## [35] "TROPICAL DEPRESSION"      "HURRICANE"               
+## [37] "LAKE-EFFECT SNOW"         "SLEET"                   
+## [39] "FREEZING FOG"             "LAKESHORE FLOOD"         
+## [41] "WATERSPOUT"               "MARINE THUNDERSTORM WIND"
+## [43] "MARINE HAIL"              "MARINE STRONG WIND"      
+## [45] "MARINE HIGH WIND"         "VOLCANIC ASHFALL"        
+## [47] "SEICHE"                   "TSUNAMI"
 ```
 
 ### Subsetting data with correct `EVTYPE` values
@@ -345,7 +284,7 @@ Data for years prior to 2007 are discarded. To simplify troubleshooting we map `
 
 ```r
 dat07 <- merge(
-    dat[2007 <= year],
+    dat[limited_min_year <= year],
     data.frame(
         EVTYPE = c("ASTRONOMICAL LOW TIDE", "AVALANCHE", "BLIZZARD", "COASTAL FLOOD", "COLD/WIND CHILL", "LANDSLIDE", "DENSE FOG", "DENSE SMOKE", "DROUGHT", "DUST DEVIL", "DUST STORM", "EXCESSIVE HEAT", "EXTREME COLD/WIND CHILL", "FLASH FLOOD", "FLOOD", "FREEZING FOG", "FROST/FREEZE", "FUNNEL CLOUD", "HAIL", "HEAT", "HEAVY RAIN", "HEAVY SNOW", "HIGH SURF", "HIGH WIND", "HURRICANE", "ICE STORM", "LAKE-EFFECT SNOW", "LAKESHORE FLOOD", "LIGHTNING", "MARINE HAIL", "MARINE HIGH WIND", "MARINE STRONG WIND", "MARINE THUNDERSTORM WIND", "RIP CURRENT", "SEICHE", "SLEET", "STORM SURGE/TIDE", "STRONG WIND", "THUNDERSTORM WIND", "TORNADO", "TROPICAL DEPRESSION", "TROPICAL STORM", "TSUNAMI", "VOLCANIC ASHFALL", "WATERSPOUT", "WILDFIRE", "WINTER STORM", "WINTER WEATHER"),
         event_type = c("Astronomical Low Tide", "Avalanche", "Blizzard", "Coastal Flood", "Cold/Wind Chill", "Debris Flow", "Dense Fog", "Dense Smoke", "Drought", "Dust Devil", "Dust Storm", "Excessive Heat", "Extreme Cold/Wind Chill", "Flash Flood", "Flood", "Freezing Fog", "Frost/Freeze", "Funnel Cloud", "Hail", "Heat", "Heavy Rain", "Heavy Snow", "High Surf", "High Wind", "Hurricane (Typhoon)", "Ice Storm", "Lake-Effect Snow", "Lakeshore Flood", "Lightning", "Marine Hail", "Marine High Wind", "Marine Strong Wind", "Marine Thunderstorm Wind", "Rip Current", "Seiche", "Sleet", "Storm Surge/Tide", "Strong Wind", "Thunderstorm Wind", "Tornado", "Tropical Depression", "Tropical Storm", "Tsunami", "Volcanic Ash", "Waterspout", "Wildfire", "Winter Storm", "Winter Weather")
@@ -435,7 +374,7 @@ and property damage (\$1.5e+10). Floods appear to be
 worst in terms of crop damage (\$2.9e+09). Second rank are floods in
 property damage (\$1.4e+10), frost and freezes
 in crop damage (\$9.3e+08),
-thunderstorm winds for injuries (1,374), and flash floods for fatalities (276).
+thunderstorm winds for injuries (1,391), and flash floods for fatalities (293).
 
 
 ```r
@@ -545,42 +484,42 @@ top_k_average_worst
 ```
 ## $frequency
 ##          event_type     n
-## 1 Thunderstorm Wind 80579
-## 2              Hail 72248
-## 3       Flash Flood 18732
-## 4             Flood 12307
-## 5         High Wind 10381
+## 1 Thunderstorm Wind 80665
+## 2              Hail 72253
+## 3       Flash Flood 19096
+## 4             Flood 12450
+## 5         High Wind 10390
 ## 
 ## $injuries
 ##          event_type injuries
 ## 1           Tornado     9608
-## 2 Thunderstorm Wind     1374
-## 3         Lightning      922
+## 2 Thunderstorm Wind     1391
+## 3         Lightning      923
 ## 4    Excessive Heat      880
 ## 5              Heat      702
 ## 
 ## $fatalities
 ##    event_type fatalities
 ## 1     Tornado        863
-## 2 Flash Flood        276
-## 3 Rip Current        199
+## 2 Flash Flood        293
+## 3 Rip Current        207
 ## 4        Heat        182
-## 5       Flood        159
+## 5       Flood        161
 ## 
 ## $property_damage
 ##         event_type property_damage
-## 1          Tornado     14629193740
-## 2            Flood     13962864800
-## 3             Hail      6098996100
-## 4      Flash Flood      5015351130
-## 5 Storm Surge/Tide      4639493000
+## 1          Tornado     14629323740
+## 2            Flood     13969305800
+## 3             Hail      6098997600
+## 4      Flash Flood      5040672130
+## 5 Storm Surge/Tide      4640643000
 ## 
 ## $crop_damage
 ##     event_type crop_damage
 ## 1        Flood  2886110000
 ## 2 Frost/Freeze   931801000
 ## 3         Hail   868793000
-## 4  Flash Flood   711642000
+## 4  Flash Flood   711942000
 ## 5      Drought   425416000
 ```
 
@@ -591,57 +530,93 @@ proportional_top_k_average_worst
 ```
 ## $frequency
 ##          event_type  frequency
-## 1 Thunderstorm Wind 0.32647530
-## 2              Hail 0.29272127
-## 3       Flash Flood 0.07589490
-## 4             Flood 0.04986326
-## 5         High Wind 0.04205984
+## 1 Thunderstorm Wind 0.31619941
+## 2              Hail 0.28322514
+## 3       Flash Flood 0.07485457
+## 4             Flood 0.04880286
+## 5         High Wind 0.04072785
 ## 
 ## $injuries
 ##          event_type   injuries
-## 1           Tornado 0.61275510
-## 2 Thunderstorm Wind 0.08762755
-## 3         Lightning 0.05880102
-## 4    Excessive Heat 0.05612245
-## 5              Heat 0.04477041
+## 1           Tornado 0.60446681
+## 2 Thunderstorm Wind 0.08751180
+## 3         Lightning 0.05806858
+## 4    Excessive Heat 0.05536332
+## 5              Heat 0.04416483
 ## 
 ## $fatalities
 ##    event_type fatalities
-## 1     Tornado 0.33566706
-## 2 Flash Flood 0.10735123
-## 3 Rip Current 0.07740179
-## 4        Heat 0.07078958
-## 5       Flood 0.06184364
+## 1     Tornado 0.32334208
+## 2 Flash Flood 0.10977894
+## 3 Rip Current 0.07755714
+## 4        Heat 0.06819033
+## 5       Flood 0.06032222
 ## 
 ## $property_damage
 ##         event_type property_damage
-## 1          Tornado      0.25852836
-## 2            Flood      0.24675293
-## 3             Hail      0.10778198
-## 4      Flash Flood      0.08863171
-## 5 Storm Surge/Tide      0.08198951
+## 1          Tornado      0.25792181
+## 2            Flood      0.24628539
+## 3             Hail      0.10752818
+## 4      Flash Flood      0.08886941
+## 5 Storm Surge/Tide      0.08181670
 ## 
 ## $crop_damage
 ##     event_type crop_damage
-## 1        Flood   0.4198732
-## 2 Frost/Freeze   0.1355590
-## 3         Hail   0.1263926
-## 4  Flash Flood   0.1035301
-## 5      Drought   0.0618898
+## 1        Flood  0.41978603
+## 2 Frost/Freeze  0.13553089
+## 3         Hail  0.12636634
+## 4  Flash Flood  0.10355229
+## 5      Drought  0.06187695
 ```
 
 
 ### Year-by-year consequences of storm events
 
+
+
+
 In this section we compare proportions of year-by-year total injuries, fatalities, property damages, and crop damages from 2007 through 2011.
 
-We find that tornadoes consistently caused the highest proportions of injuries, with rates ranging from 30% to 80% of totals. They also tended to cause the highest proportions of injuries with rates as high as 59%, although rip currents during 2009 and flash floods during 2010 caused higher proportions at 12% and 15%, respectively.
+We find that tornadoes consistently caused the highest proportions of injuries, with rates ranging from
+29%
+to
+79%
+of totals. They also tended to cause the highest proportions of fatalities with rates as high as
+59%,
+although
+rip currents
+during 2009 and
+flash floods
+during 2010 caused higher proportions at
+12%
+and
+16%,
+respectively.
 
-The causes of proportionally highest property damages are more ambiguous, with tornadoes worst in 2007 (24%) and 2011 (49%), storm surges in 2008 (30%), and hail in 2009 (28%) and 2010 (37%). In terms of property damage, floods were worst in four out of five years, with proportions of total damage ranging from 23% to 62%. Hail was worst in 2009 at 67%.
+The causes of proportionally highest property damages are more ambiguous, with tornadoes worst in 2007
+(24%)
+and 2011
+(24%),
+storm surges in 2008
+(30%),
+and hail in 2009
+(28%)
+and 2010
+(37%)
+. In terms of crop damage, floods were worst in four out of five years, with proportions of total damage ranging from
+23%
+to
+62%
+.
+Hail
+was worst in 2009 at
+67%
+.
 
 Tornadoes seemed to be unambiguously most harmful to public health in terms of both injuries and fatalities. In terms of fatalities and damage to property and crops, the plots below reveal considerable variation in worst events. In order to visualize this variation over time, the data were normalized to allow comparison of different years. The impacts of weather events are shown as proportions of total harm. The plot of injuries seems to show the worst events, in this case tornadoes, most clearly. Ambiguity seems to increase in the plots of fatalities, property damage, and crop damage.
 
 This strengthens our suspicion (see _Quality assessment_) that the overall conclusions of this analysis may not generalize well.
+
 
 
 ```r
@@ -703,6 +678,10 @@ top_k_worst_by_year <- proportions_by_year_and_type %>% {
     )
 }
 
+year_by_year_harm <- rbindlist(lapply(top_k_worst_by_year, function(x) {
+    melt(x, id.var = c("year", "event_type"), value.name = "harm")
+}))
+
 # Consolidate results.
 worst_by_year_for_injuries <- top_k_worst_by_year$injuries$event_type
 worst_by_year_for_fatalities <- top_k_worst_by_year$fatalities$event_type
@@ -716,6 +695,25 @@ worst_by_year <- sort(union(worst_by_year_for_health, worst_by_year_for_economy)
 common_events <- intersect(average_worst, worst_by_year)
 only_in_average_events <- setdiff(average_worst, worst_by_year)
 only_in_by_year_events <- setdiff(worst_by_year, average_worst)
+
+tornado_injuries_min <- year_by_year_harm[(event_type == "Tornado")&(variable == "injuries"), 100*min(harm)]
+tornado_injuries_max <- year_by_year_harm[(event_type == "Tornado")&(variable == "injuries"), 100*max(harm)]
+tornado_fatalities_max <- year_by_year_harm[(event_type == "Tornado")&(variable == "fatalities"), 100*max(harm)]
+flood_crop_min <- year_by_year_harm[(event_type == "Flood")&(variable == "crop_damage"), 100*min(harm)]
+flood_crop_max <- year_by_year_harm[(event_type == "Flood")&(variable == "crop_damage"), 100*max(harm)]
+
+max_fatalities_09 <- year_by_year_harm[(year==2009)&(variable == "fatalities"), 100*harm][1]
+event_fatalities_09 <- year_by_year_harm[(year==2009)&(variable == "fatalities"), tolower(event_type)][1]
+
+max_fatalities_10 <- year_by_year_harm[(year==2010)&(variable == "fatalities"), 100*harm][1]
+event_fatalities_10 <- year_by_year_harm[(year==2010)&(variable == "fatalities"), tolower(event_type)][1]
+
+tornado_property_max_07 <- year_by_year_harm[(year==2007)&(event_type == "Tornado")&(variable == "property_damage"), 100*harm]
+storm_surge_max_08 <- year_by_year_harm[(year==2008)&(event_type == "Storm Surge/Tide")&(variable == "property_damage"), 100*harm]
+hail_prop_max_09 <- year_by_year_harm[(year==2009)&(event_type == "Hail")&(variable == "property_damage"), 100*harm]
+hail_crop_max_09 <- year_by_year_harm[(year==2009)&(event_type == "Hail")&(variable == "crop_damage"), 100*harm]
+hail_prop_max_10 <- year_by_year_harm[(year==2010)&(event_type == "Hail")&(variable == "property_damage"), 100*harm]
+tornado_property_max_11 <- year_by_year_harm[(year==2011)&(event_type == "Tornado")&(variable == "property_damage"), 100*harm]
 ```
 
 
@@ -747,7 +745,7 @@ ggplot(worst_by_year_and_type, aes(x=year, y=proportion, color=event_type)) +
     )
 ```
 
-![](severe-weather-writeup_180701-1604_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](severe-weather-writeup_180701-1604_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 
 ```r
@@ -760,48 +758,48 @@ top_k_worst_by_year
 ## # Groups:   year [5]
 ##     year event_type        frequency
 ##    <dbl> <fct>                 <dbl>
-##  1  2007 Thunderstorm Wind     0.311
-##  2  2007 Hail                  0.304
-##  3  2008 Hail                  0.325
-##  4  2008 Thunderstorm Wind     0.310
-##  5  2009 Thunderstorm Wind     0.301
-##  6  2009 Hail                  0.300
-##  7  2010 Thunderstorm Wind     0.340
-##  8  2010 Hail                  0.235
-##  9  2011 Thunderstorm Wind     0.360
-## 10  2011 Hail                  0.295
+##  1  2007 Thunderstorm Wind     0.300
+##  2  2007 Hail                  0.294
+##  3  2008 Hail                  0.315
+##  4  2008 Thunderstorm Wind     0.302
+##  5  2009 Thunderstorm Wind     0.292
+##  6  2009 Hail                  0.290
+##  7  2010 Thunderstorm Wind     0.329
+##  8  2010 Hail                  0.227
+##  9  2011 Thunderstorm Wind     0.349
+## 10  2011 Hail                  0.286
 ## 
 ## $injuries
 ## # A tibble: 10 x 3
 ## # Groups:   year [5]
 ##     year event_type        injuries
 ##    <dbl> <fct>                <dbl>
-##  1  2007 Tornado             0.304 
-##  2  2007 Excessive Heat      0.247 
-##  3  2008 Tornado             0.629 
-##  4  2008 Thunderstorm Wind   0.0905
-##  5  2009 Tornado             0.327 
-##  6  2009 Lightning           0.166 
-##  7  2010 Tornado             0.379 
-##  8  2010 Thunderstorm Wind   0.172 
-##  9  2011 Tornado             0.793 
-## 10  2011 Heat                0.0786
+##  1  2007 Tornado             0.301 
+##  2  2007 Excessive Heat      0.245 
+##  3  2008 Tornado             0.625 
+##  4  2008 Thunderstorm Wind   0.0936
+##  5  2009 Tornado             0.293 
+##  6  2009 Lightning           0.148 
+##  7  2010 Tornado             0.377 
+##  8  2010 Thunderstorm Wind   0.174 
+##  9  2011 Tornado             0.791 
+## 10  2011 Heat                0.0784
 ## 
 ## $fatalities
 ## # A tibble: 10 x 3
 ## # Groups:   year [5]
 ##     year event_type  fatalities
 ##    <dbl> <fct>            <dbl>
-##  1  2007 Tornado         0.198 
-##  2  2007 Flash Flood     0.171 
-##  3  2008 Tornado         0.272 
-##  4  2008 Flash Flood     0.108 
-##  5  2009 Rip Current     0.133 
-##  6  2009 Flash Flood     0.112 
-##  7  2010 Flash Flood     0.153 
-##  8  2010 Rip Current     0.114 
-##  9  2011 Tornado         0.598 
-## 10  2011 Heat            0.0642
+##  1  2007 Tornado         0.192 
+##  2  2007 Flash Flood     0.166 
+##  3  2008 Tornado         0.264 
+##  4  2008 Flash Flood     0.113 
+##  5  2009 Rip Current     0.117 
+##  6  2009 Lightning       0.102 
+##  7  2010 Flash Flood     0.158 
+##  8  2010 Rip Current     0.115 
+##  9  2011 Tornado         0.586 
+## 10  2011 Flash Flood     0.0679
 ## 
 ## $property_damage
 ## # A tibble: 10 x 3
@@ -810,14 +808,14 @@ top_k_worst_by_year
 ##    <dbl> <fct>                         <dbl>
 ##  1  2007 Tornado                       0.242
 ##  2  2007 Flash Flood                   0.212
-##  3  2008 Storm Surge/Tide              0.296
-##  4  2008 Hurricane (Typhoon)           0.156
-##  5  2009 Hail                          0.280
-##  6  2009 Thunderstorm Wind             0.272
+##  3  2008 Storm Surge/Tide              0.295
+##  4  2008 Hurricane (Typhoon)           0.155
+##  5  2009 Hail                          0.275
+##  6  2009 Thunderstorm Wind             0.267
 ##  7  2010 Hail                          0.368
 ##  8  2010 Flood                         0.335
 ##  9  2011 Tornado                       0.470
-## 10  2011 Flood                         0.370
+## 10  2011 Flood                         0.369
 ## 
 ## $crop_damage
 ## # A tibble: 10 x 3

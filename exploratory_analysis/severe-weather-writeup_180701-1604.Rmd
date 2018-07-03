@@ -21,7 +21,7 @@ We analyzed the top-5 average and top-2 year-by-year worst events during this pe
 
 # Data Processing
 
-Data are loaded from cache if available, otherwise decompressed from an archive if available, and otherwise downloaded (see _Loading data_). Data not used in this analysis is removed in _Trimming unused data_. We then encounter and explore data-quality issues in _Exploring `EVTYPE`_. To troubleshoot these issues, a time series is constructed in _Construction of time series_ and visualized in _Visualizing `EVTYPE` evolution_ where causes are identified. They are addressed in _Subsetting data with correct `EVTYPE`_ by extracting a high-quality subset of data suitable for comparative analysis. Property and crop damages are computed in dollars in _Transforming economic data_. The data are tidied and saved in _Tidying_.
+Data are loaded from cache if available, otherwise decompressed from an archive if available, and otherwise downloaded (see _Loading data_). Data not required for this analysis are removed in _Trimming unused data_. We then encounter and explore data-quality issues in _Exploring `EVTYPE`_. To troubleshoot these issues, a time series is constructed in _Construction of time series_ and visualized in _Visualizing `EVTYPE` evolution_ where causes are identified. They are addressed in _Subsetting data with correct `EVTYPE`_ by extracting a high-quality subset of data suitable for comparative analysis. Property and crop damages are computed in dollars in _Transforming economic data_. The data are tidied and saved in _Tidying_.
 
 
 ### Setting analysis parameters
@@ -64,19 +64,14 @@ for(d in c(dat_dir, raw_dir, int_dir, tdy_dir)) if(!dir.exists(d)) dir.create(d)
 # Download and read StormData.csv.bz2.
 if(!file.exists(cch_pth)){
     if(!file.exists(dat_pth)) download.file(dat_url, dat_pth)
-    fwrite(read.csv(dat_pth), cch_pth)
+    write.csv(read.csv(dat_pth), cch_pth)
 }
 dat <- fread(cch_pth)
 ```
 
 ### Trimming unused data
 
-The `STATE` field has 72 encodings. We remove rows encoding locations outside of the 50 United States, as well as columns that will not be used in this analysis.
-
 ```{r , warning=F}
-# Exclude data from territories outside the United States.
-unique(dat$STATE)
-dat <- dat[STATE %in% state.abb]
 # Select columns used in processing.
 dat <- dat[, .(EVTYPE, BGN_DATE, BGN_TIME, TIME_ZONE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, FATALITIES, INJURIES)]
 ```
@@ -184,9 +179,9 @@ counts_by_year <- dat[, .(event_types = length(unique(EVTYPE))), by = year][orde
 distinct_types_07_to_11 <- unique(dat[limited_min_year <= year, EVTYPE])
 ```
 
-We see that over 400 new event are added between about 1993 and 1995, the majority of which are retired within a few years. The number continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, exactly `r counts_by_year[2007 == year, event_types]` are used in each year.
+We see that over 400 new event are added between about 1993 and 1995, the majority of which are retired within a few years. The number continues to decline for a decade before stabilizing slightly below 50 around 2005. After 2006, up to `r counts_by_year[limited_min_year <= year, max(event_types)]` are used in each year.
 
-The number of distinct event types used between 2007 and 2011 is
+The number of distinct event types used between `r limited_min_year` and 2011 is
 `r length(distinct_types_07_to_11)`. They are exactly the permitted storm data events listed in table 1, section 2.1.1 of the [National Weather Service Instruction (NWSI) 10-1605](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) dated August 17, 2007 (which, provided to us by our instructors, has in its publication date a hint). (Note: `LANDSLIDE` and "Debris Flow" are the same thing.)
 
 ```{r evtype_evolution, eval=F}
@@ -209,11 +204,11 @@ distinct_types_07_to_11
 
 ### Subsetting data with correct `EVTYPE` values
 
-Data for years prior to 2007 are discarded. To simplify troubleshooting we map `EVTYPE` values to names listed in NWSI 10-1605. `LANDSLIDE` maps to "Debris Flow", `HURRICANE` to "Hurricane (Typhoon)", and `VOLCANIC ASHFALL` to "Volcanic Ash". The remainder change capitalization only.
+Data for years prior to `r limited_min_year` are discarded. To simplify troubleshooting we map `EVTYPE` values to names listed in NWSI 10-1605. `LANDSLIDE` maps to "Debris Flow", `HURRICANE` to "Hurricane (Typhoon)", and `VOLCANIC ASHFALL` to "Volcanic Ash". The remainder change capitalization only.
 
 ```{r }
 dat07 <- merge(
-    dat[2007 <= year],
+    dat[limited_min_year <= year],
     data.frame(
         EVTYPE = c("ASTRONOMICAL LOW TIDE", "AVALANCHE", "BLIZZARD", "COASTAL FLOOD", "COLD/WIND CHILL", "LANDSLIDE", "DENSE FOG", "DENSE SMOKE", "DROUGHT", "DUST DEVIL", "DUST STORM", "EXCESSIVE HEAT", "EXTREME COLD/WIND CHILL", "FLASH FLOOD", "FLOOD", "FREEZING FOG", "FROST/FREEZE", "FUNNEL CLOUD", "HAIL", "HEAT", "HEAVY RAIN", "HEAVY SNOW", "HIGH SURF", "HIGH WIND", "HURRICANE", "ICE STORM", "LAKE-EFFECT SNOW", "LAKESHORE FLOOD", "LIGHTNING", "MARINE HAIL", "MARINE HIGH WIND", "MARINE STRONG WIND", "MARINE THUNDERSTORM WIND", "RIP CURRENT", "SEICHE", "SLEET", "STORM SURGE/TIDE", "STRONG WIND", "THUNDERSTORM WIND", "TORNADO", "TROPICAL DEPRESSION", "TROPICAL STORM", "TSUNAMI", "VOLCANIC ASHFALL", "WATERSPOUT", "WILDFIRE", "WINTER STORM", "WINTER WEATHER"),
         event_type = c("Astronomical Low Tide", "Avalanche", "Blizzard", "Coastal Flood", "Cold/Wind Chill", "Debris Flow", "Dense Fog", "Dense Smoke", "Drought", "Dust Devil", "Dust Storm", "Excessive Heat", "Extreme Cold/Wind Chill", "Flash Flood", "Flood", "Freezing Fog", "Frost/Freeze", "Funnel Cloud", "Hail", "Heat", "Heavy Rain", "Heavy Snow", "High Surf", "High Wind", "Hurricane (Typhoon)", "Ice Storm", "Lake-Effect Snow", "Lakeshore Flood", "Lightning", "Marine Hail", "Marine High Wind", "Marine Strong Wind", "Marine Thunderstorm Wind", "Rip Current", "Seiche", "Sleet", "Storm Surge/Tide", "Strong Wind", "Thunderstorm Wind", "Tornado", "Tropical Depression", "Tropical Storm", "Tsunami", "Volcanic Ash", "Waterspout", "Wildfire", "Winter Storm", "Winter Weather")
@@ -411,17 +406,7 @@ proportional_top_k_average_worst
 
 ### Year-by-year consequences of storm events
 
-In this section we compare proportions of year-by-year total injuries, fatalities, property damages, and crop damages from `r limited_min_year` through `r max_year`.
-
-We find that tornadoes consistently caused the highest proportions of injuries, with rates ranging from 30% to 80% of totals. They also tended to cause the highest proportions of injuries with rates as high as 59%, although rip currents during 2009 and flash floods during 2010 caused higher proportions at 12% and 15%, respectively.
-
-The causes of proportionally highest property damages are more ambiguous, with tornadoes worst in 2007 (24%) and 2011 (49%), storm surges in 2008 (30%), and hail in 2009 (28%) and 2010 (37%). In terms of property damage, floods were worst in four out of five years, with proportions of total damage ranging from 23% to 62%. Hail was worst in 2009 at 67%.
-
-Tornadoes seemed to be unambiguously most harmful to public health in terms of both injuries and fatalities. In terms of fatalities and damage to property and crops, the plots below reveal considerable variation in worst events. In order to visualize this variation over time, the data were normalized to allow comparison of different years. The impacts of weather events are shown as proportions of total harm. The plot of injuries seems to show the worst events, in this case tornadoes, most clearly. Ambiguity seems to increase in the plots of fatalities, property damage, and crop damage.
-
-This strengthens our suspicion (see _Quality assessment_) that the overall conclusions of this analysis may not generalize well.
-
-```{r }
+```{r year_by_year_consequences, include=F, results="hide"}
 counts_by_year_and_type <- tdy[
     ,
     .(n = .N),
@@ -480,6 +465,10 @@ top_k_worst_by_year <- proportions_by_year_and_type %>% {
     )
 }
 
+year_by_year_harm <- rbindlist(lapply(top_k_worst_by_year, function(x) {
+    melt(x, id.var = c("year", "event_type"), value.name = "harm")
+}))
+
 # Consolidate results.
 worst_by_year_for_injuries <- top_k_worst_by_year$injuries$event_type
 worst_by_year_for_fatalities <- top_k_worst_by_year$fatalities$event_type
@@ -493,6 +482,72 @@ worst_by_year <- sort(union(worst_by_year_for_health, worst_by_year_for_economy)
 common_events <- intersect(average_worst, worst_by_year)
 only_in_average_events <- setdiff(average_worst, worst_by_year)
 only_in_by_year_events <- setdiff(worst_by_year, average_worst)
+
+tornado_injuries_min <- year_by_year_harm[(event_type == "Tornado")&(variable == "injuries"), 100*min(harm)]
+tornado_injuries_max <- year_by_year_harm[(event_type == "Tornado")&(variable == "injuries"), 100*max(harm)]
+tornado_fatalities_max <- year_by_year_harm[(event_type == "Tornado")&(variable == "fatalities"), 100*max(harm)]
+flood_crop_min <- year_by_year_harm[(event_type == "Flood")&(variable == "crop_damage"), 100*min(harm)]
+flood_crop_max <- year_by_year_harm[(event_type == "Flood")&(variable == "crop_damage"), 100*max(harm)]
+
+max_fatalities_09 <- year_by_year_harm[(year==2009)&(variable == "fatalities"), 100*harm][1]
+event_fatalities_09 <- year_by_year_harm[(year==2009)&(variable == "fatalities"), tolower(event_type)][1]
+
+max_fatalities_10 <- year_by_year_harm[(year==2010)&(variable == "fatalities"), 100*harm][1]
+event_fatalities_10 <- year_by_year_harm[(year==2010)&(variable == "fatalities"), tolower(event_type)][1]
+
+tornado_property_max_07 <- year_by_year_harm[(year==2007)&(event_type == "Tornado")&(variable == "property_damage"), 100*harm]
+storm_surge_max_08 <- year_by_year_harm[(year==2008)&(event_type == "Storm Surge/Tide")&(variable == "property_damage"), 100*harm]
+hail_prop_max_09 <- year_by_year_harm[(year==2009)&(event_type == "Hail")&(variable == "property_damage"), 100*harm]
+hail_crop_max_09 <- year_by_year_harm[(year==2009)&(event_type == "Hail")&(variable == "crop_damage"), 100*harm]
+hail_prop_max_10 <- year_by_year_harm[(year==2010)&(event_type == "Hail")&(variable == "property_damage"), 100*harm]
+tornado_property_max_11 <- year_by_year_harm[(year==2011)&(event_type == "Tornado")&(variable == "property_damage"), 100*harm]
+```
+
+
+In this section we compare proportions of year-by-year total injuries, fatalities, property damages, and crop damages from `r limited_min_year` through `r max_year`.
+
+We find that tornadoes consistently caused the highest proportions of injuries, with rates ranging from
+`r format(tornado_injuries_min, digits=2)`%
+to
+`r format(tornado_injuries_max, digits=2)`%
+of totals. They also tended to cause the highest proportions of fatalities with rates as high as
+`r format(tornado_fatalities_max , digits=2)`%,
+although
+`r event_fatalities_09`s
+during 2009 and
+`r event_fatalities_10`s
+during 2010 caused higher proportions at
+`r format(max_fatalities_09, digits=2)`%
+and
+`r format(max_fatalities_10, digits=2)`%,
+respectively.
+
+The causes of proportionally highest property damages are more ambiguous, with tornadoes worst in 2007
+(`r format(tornado_property_max_07, digits=2)`%)
+and 2011
+(`r format(tornado_property_max_07, digits=2)`%),
+storm surges in 2008
+(`r format(storm_surge_max_08, digits=2)`%),
+and hail in 2009
+(`r format(hail_prop_max_09, digits=2)`%)
+and 2010
+(`r format(hail_prop_max_10, digits=2)`%)
+. In terms of crop damage, floods were worst in four out of five years, with proportions of total damage ranging from
+`r format(flood_crop_min, digits=2)`%
+to
+`r format(flood_crop_max, digits=2)`%
+.
+Hail
+was worst in 2009 at
+`r format(hail_crop_max_09, digits=2)`%
+.
+
+Tornadoes seemed to be unambiguously most harmful to public health in terms of both injuries and fatalities. In terms of fatalities and damage to property and crops, the plots below reveal considerable variation in worst events. In order to visualize this variation over time, the data were normalized to allow comparison of different years. The impacts of weather events are shown as proportions of total harm. The plot of injuries seems to show the worst events, in this case tornadoes, most clearly. Ambiguity seems to increase in the plots of fatalities, property damage, and crop damage.
+
+This strengthens our suspicion (see _Quality assessment_) that the overall conclusions of this analysis may not generalize well.
+
+
+```{r year_by_year_consequences, eval=F}
 ```
 
 ```{r }
