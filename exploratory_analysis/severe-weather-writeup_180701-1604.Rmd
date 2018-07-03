@@ -43,6 +43,9 @@ tdy_pth <- file.path(tdy_dir, "StormData-Tidy.csv")
 # These control rank sizes when computing the top-k worst weather events.
 average_k <- 5
 by_year_k <- 2
+
+# Cutoff year: observations from prior years are excluded from analysis.
+limited_min_year = 2007
 ```
 
 ### Loading data
@@ -177,7 +180,6 @@ mods_by_year[, active := cumsum(additions) - cumsum(removals)]
 ## It's there because of `removed = max(year)+1` above.
 mods_by_year <- mods_by_year[year <= max(dat$year),]
 
-limited_min_year = 2007
 counts_by_year <- dat[, .(event_types = length(unique(EVTYPE))), by = year][order(year)]
 distinct_types_07_to_11 <- unique(dat[limited_min_year <= year, EVTYPE])
 ```

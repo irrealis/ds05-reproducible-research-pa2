@@ -158,7 +158,10 @@ tdy_pth &lt;- file.path(tdy_dir, &quot;StormData-Tidy.csv&quot;)
 
 # These control rank sizes when computing the top-k worst weather events.
 average_k &lt;- 5
-by_year_k &lt;- 2</code></pre>
+by_year_k &lt;- 2
+
+# Cutoff year: observations from prior years are excluded from analysis.
+limited_min_year = 2007</code></pre>
 </div>
 <div id="loading-data" class="section level3">
 <h3>Loading data</h3>
@@ -289,7 +292,6 @@ mods_by_year[, active := cumsum(additions) - cumsum(removals)]
 ## It's there because of `removed = max(year)+1` above.
 mods_by_year &lt;- mods_by_year[year &lt;= max(dat$year),]
 
-limited_min_year = 2007
 counts_by_year &lt;- dat[, .(event_types = length(unique(EVTYPE))), by = year][order(year)]
 distinct_types_07_to_11 &lt;- unique(dat[limited_min_year &lt;= year, EVTYPE])</code></pre>
 <pre class="r"><code>## Convert to long form for plotting with ggplot2.
