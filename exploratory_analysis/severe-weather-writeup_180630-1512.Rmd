@@ -541,6 +541,7 @@ counts_and_sums_by_year <- with(
     )
 )
 proportions_by_year_and_type <- counts_and_sums_by_year_and_type %>%
+
     merge(counts_and_sums_by_year, by=c("year"), suffixes=c("", "_annual")) %>%
     transmute(
         year = year,
