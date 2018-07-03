@@ -546,6 +546,7 @@ library(rmarkdown)
 rmarkdown::render(
     "severe-weather-writeup_180701-1604.Rmd",
     output_dir = "text",
+    output_format = 'html_document',
     clean = T
 )
 ```
