@@ -5,7 +5,6 @@ date: "July 1, 2018"
 output:
     html_document:
         keep_md: true
-        self_contained: true
 ---
 
 # Synopsis
